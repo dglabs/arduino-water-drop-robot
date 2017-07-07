@@ -14,7 +14,8 @@
 
 const long MAX_OUT_VALVE_OPEN_TIME_SECONDS = 600;
 
-const unsigned long VALVE_TRANSIT_TIMEOUT_MILLIS = 5000;
+const unsigned long VALVE_TRANSIT_TIMEOUT_MILLIS_MIN = 5000;
+const unsigned long VALVE_TRANSIT_TIMEOUT_MILLIS_MAX = 7000;
 const int STORAGE_SIZE_WATER_VALVE = 1;
 
 class WaterMotorizedValve : public Valve {

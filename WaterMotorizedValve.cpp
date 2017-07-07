@@ -42,13 +42,15 @@ boolean WaterMotorizedValve::setValvePosition(Position position) {
 	digitalWrite(waterPolarPin, Position::VALVE_OPEN == position ? HIGH : LOW);
 	valveTransitChrono.restart(0);
 	digitalWrite(waterPowerPin, LOW);
-	delay(500);
+	int initialSignalPin = (signalPin > 0) ?  digitalRead(signalPin) : HIGH;
+	boolean signalPinChanged = false;
 	do {
 		delay(500);
 		if (signalPin > 0) {
-			if (digitalRead(signalPin) == LOW) break;
+			if (initialSignalPin != digitalRead(signalPin)) signalPinChanged = true;
+			if (valveTransitChrono.elapsed() > VALVE_TRANSIT_TIMEOUT_MILLIS_MIN && signalPinChanged && digitalRead(signalPin) == LOW) break;
 		}
-	} while (valveTransitChrono.elapsed() < VALVE_TRANSIT_TIMEOUT_MILLIS);
+	} while (valveTransitChrono.elapsed() < VALVE_TRANSIT_TIMEOUT_MILLIS_MAX);
 	digitalWrite(waterPowerPin, HIGH);
 	digitalWrite(waterPolarPin, HIGH);
 	switch (position) {
