@@ -17,8 +17,8 @@ class KeyboardWithISR {
 public:
 	const uint8_t* keyPins;
 
-	boolean pressed[KEYS_COUNT];
-	boolean longPressed[KEYS_COUNT];
+	volatile boolean pressed[KEYS_COUNT];
+	volatile boolean longPressed[KEYS_COUNT];
 
 	Chrono keyChronos[KEYS_COUNT];
 

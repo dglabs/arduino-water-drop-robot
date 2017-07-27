@@ -17,6 +17,7 @@
 #include "WaterInValve.h"
 #include "WaterLevelMeter.h"
 #include "KeyboardWithISR.h"
+#include "WaterFlowMeter.h"
 
 // Date and time functions using a DS1307 RTC connected via I2C and Wire lib
 
@@ -36,10 +37,11 @@ protected:
 	WaterLevelMeter& waterLevelMeter;
 	WaterMotorizedValve& waterOutValve;
 	WaterInValve& waterInValve;
+	WaterFlowMeter& waterFlowMeter;
 
 public:
 	RobotDisplay(LiquidCrystal_I2C& _lcd, RTC_DS1307& _rtc, WaterLevelMeter& _waterLevelMeter
-			, WaterMotorizedValve& _waterOutValve, WaterInValve& _waterInValve);
+			, WaterMotorizedValve& _waterOutValve, WaterInValve& _waterInValve, WaterFlowMeter& _waterFlowMeter);
 	virtual ~RobotDisplay();
 
 	void initialize();

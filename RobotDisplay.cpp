@@ -9,14 +9,15 @@
 #include "RobotDisplay.h"
 
 RobotDisplay::RobotDisplay(LiquidCrystal_I2C& _lcd, RTC_DS1307& _rtc, WaterLevelMeter& _waterLevelMeter
-		, WaterMotorizedValve& _waterOutValve, WaterInValve& _waterInValve) :
-	backligtOnChrono(Chrono::SECONDS),
-	currentState(State::Dashboard),
-	lcd(_lcd),
-	rtc(_rtc),
-	waterLevelMeter(_waterLevelMeter),
-	waterOutValve(_waterOutValve),
-	waterInValve(_waterInValve)
+		, WaterMotorizedValve& _waterOutValve, WaterInValve& _waterInValve, WaterFlowMeter& _waterFlowMeter) :
+	backligtOnChrono(Chrono::SECONDS)
+	, currentState(State::Dashboard)
+	, lcd(_lcd)
+	, rtc(_rtc)
+	, waterLevelMeter(_waterLevelMeter)
+	, waterOutValve(_waterOutValve)
+	, waterInValve(_waterInValve)
+	, waterFlowMeter(_waterFlowMeter)
 {
 
 }
@@ -100,12 +101,13 @@ void RobotDisplay::update(DateTime& now) {
 	    	lcd.print("s");
 	    }
 	    else
-	    	lcd.print(" PRESS");
+	    	lcd.print("     ");
 
 	    lcd.setCursor(0, 1);
-	    lcd.print("WtrLvl:");
+	    lcd.print("L:");
 	    lcd.print(waterLevelMeter.readLevel());
 	    lcd.print("% ");
+	    lcd.print(waterFlowMeter.getTotalVolume());
 	} break;
 	case InValve: {
 	    lcd.setCursor(0, 0);
@@ -115,7 +117,7 @@ void RobotDisplay::update(DateTime& now) {
 	    	lcd.print(waterInValve.valveOpenSeconds());
 	    	lcd.print("s");
 	    }
-	    else lcd.print(" PRESS");
+	    else lcd.print("      ");
 
 	    lcd.setCursor(0, 1);
 	    lcd.print("WtrLvl:");
@@ -131,9 +133,9 @@ void RobotDisplay::update(DateTime& now) {
 	    	if (i < LEVEL_SENSOR_COUNT - 1) lcd.print(';');
 	    }
 	    lcd.setCursor(0, 1);
-	    lcd.print('A');
+	    lcd.print('D');
 	    for (int i = 0; i < LEVEL_SENSOR_COUNT; i++) {
-	    	lcd.print(waterLevelMeter.getAverageValues()[i]);
+	    	lcd.print(waterLevelMeter.getAverageValues()[i] - waterLevelMeter.getCurrentValues()[i]);
 	    	if (i < LEVEL_SENSOR_COUNT - 1) lcd.print(';');
 	    }
 	} break;

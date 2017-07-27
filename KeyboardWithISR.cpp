@@ -45,10 +45,10 @@ void key1_ISR() {
 	}
 }
 
-void key2_ISR() {
-	if (digitalRead(instance->keyPins[1]) == LOW) {
+void refreshKey(int inputPinIndex) {
+	if (digitalRead(instance->keyPins[inputPinIndex]) == LOW) {
 		 if (!instance->key1_Chrono.isRunning()) {
-			 instance->pressed[1] = true;	// temporary consider key pressed
+			 instance->pressed[inputPinIndex] = true;	// temporary consider key pressed
 			 instance->key1_Chrono.restart();
 		 }
 	}
@@ -56,21 +56,21 @@ void key2_ISR() {
 		if (instance->key1_Chrono.isRunning()) {
 			// If long pressed interval satisfied, then set long press for key
 			if (instance->key1_Chrono.hasPassed(KEY_LONG_PRESS_MILLIS)) {
-				instance->pressed[1] = false;
-				instance->longPressed[1] = true;
+				instance->pressed[inputPinIndex] = false;
+				instance->longPressed[inputPinIndex] = true;
 			}
 			// Else consider short press if time passed
 			else if (instance->key1_Chrono.hasPassed(KEY_PRESS_MILLIS)) {
-				instance->pressed[1] = true;
-				instance->longPressed[1] = false;
+				instance->pressed[inputPinIndex] = true;
+				instance->longPressed[inputPinIndex] = false;
 			}
 			else {	// veryshort press. Ignoring
-				instance->pressed[1] = false;
-				instance->longPressed[1] = false;
+				instance->pressed[inputPinIndex] = false;
+				instance->longPressed[inputPinIndex] = false;
 			}
 		}
 		else {	// Id chrono is not running, then consider artifact and ignore
-			instance->pressed[1] = instance->longPressed[1] = false;
+			instance->pressed[inputPinIndex] = instance->longPressed[1] = false;
 		}
 		// Stop key chrono
 		instance->key1_Chrono.restart();
@@ -88,8 +88,6 @@ KeyboardWithISR::KeyboardWithISR(const uint8_t* _keyPins) :
 
 	instance = this;
 	attachInterrupt(digitalPinToInterrupt(keyPins[0]), key1_ISR, CHANGE);
-	/*if (KEYS_COUNT > 1)
-		attachInterrupt(digitalPinToInterrupt(keyPins[1]), key2_ISR, CHANGE);*/
 }
 
 void KeyboardWithISR::clear() {
@@ -102,7 +100,7 @@ void KeyboardWithISR::clear() {
 }
 
 void KeyboardWithISR::refresh() {
-	key2_ISR();
+	refreshKey(1);
 }
 
 
@@ -119,8 +117,7 @@ boolean KeyboardWithISR::isPressed(uint8_t index) {
 }
 
 
-boolean KeyboardWithISR::isLongPressed(uint8_t index)
-{
+boolean KeyboardWithISR::isLongPressed(uint8_t index) {
 	boolean result = longPressed[index];
 	longPressed[index] = false;
 	return result;

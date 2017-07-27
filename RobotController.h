@@ -18,6 +18,7 @@
 #include "WaterLevelMeter.h"
 #include "KeyboardWithISR.h"
 #include "RobotDisplay.h"
+#include "WaterFlowMeter.h"
 
 const long ACTIVE_STATE_TIME_SECONDS = 60;
 const long POWER_SAVE_SYCLES = 4;
@@ -40,6 +41,7 @@ protected:
 	WaterMotorizedValve& waterOutValve;
 	WaterInValve& waterInValve;
 	RobotDisplay& display;
+	WaterFlowMeter& waterFlowMeter;
 
 	void setCurrentState(RobotState _state);
 public:
@@ -49,7 +51,8 @@ public:
 			WaterLevelMeter& _waterLevelMeter,
 			WaterMotorizedValve& _waterOutValve,
 			WaterInValve& _waterInValve,
-			RobotDisplay& _display);
+			RobotDisplay& _display,
+			WaterFlowMeter& _waterFlowMeter);
 	virtual ~RobotController();
 
 	void loop();

@@ -13,24 +13,26 @@
 const DateTime waterOutTime(2017, 06, 10, 21, 0, 0);
 const DateTime waterInTime(2017, 06, 10, 10, 0, 0);
 
-RobotController::RobotController(const uint8_t _mainPowerPin,
-		RTC_DS1307& _rtc,
-		KeyboardWithISR& _keyboard,
-		WaterLevelMeter& _waterLevelMeter,
-		WaterMotorizedValve& _waterOutValve,
-		WaterInValve& _waterInValve,
-		RobotDisplay& _display) :
+RobotController::RobotController(const uint8_t _mainPowerPin
+		, RTC_DS1307& _rtc
+		, KeyboardWithISR& _keyboard
+		, WaterLevelMeter& _waterLevelMeter
+		, WaterMotorizedValve& _waterOutValve
+		, WaterInValve& _waterInValve
+		, RobotDisplay& _display
+		, WaterFlowMeter& _waterFlowMeter) :
 
-		mainPowerPin(_mainPowerPin),
-		rtc(_rtc),
-		keyboard(_keyboard),
-		waterLevelMeter(_waterLevelMeter),
-		waterOutValve(_waterOutValve),
-		waterInValve(_waterInValve),
-		display(_display),
+		mainPowerPin(_mainPowerPin)
+		, rtc(_rtc)
+		, keyboard(_keyboard)
+		, waterLevelMeter(_waterLevelMeter)
+		, waterOutValve(_waterOutValve)
+		, waterInValve(_waterInValve)
+		, display(_display)
+		, waterFlowMeter(_waterFlowMeter)
 
-		currentState(RobotState::Active),
-		activeStateChrono(Chrono::SECONDS)
+		, currentState(RobotState::Active)
+		, activeStateChrono(Chrono::SECONDS)
 {
 	pinMode(mainPowerPin, OUTPUT); digitalWrite(mainPowerPin, HIGH);	// Turn on all peripherals for the first time
 	powerSaveCyclesCount = 0;
@@ -141,8 +143,10 @@ void RobotController::loop() {
 
 	    if (waterInValve.isOpen()) {
 	    	anyActivity = true;
-	    	if (!checkWaterLevel() || waterInValve.valveOpenSeconds() > MAX_IN_VALVE_OPEN_TIME_SECONDS)
+	    	if (!checkWaterLevel() || waterInValve.valveOpenSeconds() > MAX_IN_VALVE_OPEN_TIME_SECONDS) {
 	    		waterInValve.closeValve();
+	    		waterFlowMeter.stopWaterOut();
+	    	}
 	    }
 
 	    if (waterOutValve.isOpen()) {
@@ -174,10 +178,11 @@ void RobotController::loop() {
 }
 
 void RobotController::startWaterOut() {
-	if (waterLevelMeter.readLevel() > 10 && waterOutValve.valveCloseSeconds() > MIN_TIME_VAVLE_CLOSED_SECONDS) {
+	if (waterLevelMeter.readLevel() > 0 && waterOutValve.valveCloseSeconds() > MIN_TIME_VAVLE_CLOSED_SECONDS) {
 		waterInValve.closeValve();
 		waterOutValve.openValve();
 		display.setState(RobotDisplay::OutValve);
+		waterFlowMeter.startWaterOut();
 	}
 }
 
@@ -191,10 +196,10 @@ void RobotController::startWaterIn() {
 
 boolean RobotController::checkWaterLevel() {
 	if (waterInValve.isOpen()) {
-		if (waterLevelMeter.readLevel() >= 70) return false;
+		if (waterLevelMeter.readLevel() > 70) return false;
 	}
 	if (waterOutValve.isOpen()) {
-		if (waterLevelMeter.readLevel() <= 20) return false;
+		if (waterLevelMeter.readLevel() <= 0) return false;
 	}
 	return true;
 }
