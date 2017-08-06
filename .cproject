@@ -30,6 +30,9 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Wire}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Wire/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Low-Power}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/CheapStepper}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/AccelStepper}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/AccelStepper/src}&quot;"/>
 								</option>
 								<inputType id="io.sloeber.compiler.cpp.sketch.input.976180371" name="CPP source files" superClass="io.sloeber.compiler.cpp.sketch.input"/>
 							</tool>
@@ -46,6 +49,9 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Wire}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Wire/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Low-Power}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/CheapStepper}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/AccelStepper}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/AccelStepper/src}&quot;"/>
 								</option>
 								<inputType id="io.sloeber.compiler.c.sketch.input.1357423916" name="C Source Files" superClass="io.sloeber.compiler.c.sketch.input"/>
 							</tool>
@@ -62,6 +68,9 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Wire}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Wire/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Low-Power}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/CheapStepper}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/AccelStepper}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/AccelStepper/src}&quot;"/>
 								</option>
 								<inputType id="io.sloeber.compiler.S.sketch.input.732030978" name="Assembly source files" superClass="io.sloeber.compiler.S.sketch.input"/>
 							</tool>

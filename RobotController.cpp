@@ -20,7 +20,9 @@ RobotController::RobotController(const uint8_t _mainPowerPin
 		, WaterMotorizedValve& _waterOutValve
 		, WaterInValve& _waterInValve
 		, RobotDisplay& _display
-		, WaterFlowMeter& _waterFlowMeter) :
+		, WaterFlowMeter& _waterFlowMeter
+		, RainSensor& _rainSensor
+		, RainCoverHandler& _rainCoverHandler) :
 
 		mainPowerPin(_mainPowerPin)
 		, rtc(_rtc)
@@ -30,6 +32,8 @@ RobotController::RobotController(const uint8_t _mainPowerPin
 		, waterInValve(_waterInValve)
 		, display(_display)
 		, waterFlowMeter(_waterFlowMeter)
+		, rainSensor(_rainSensor)
+		, rainCoverHandler(_rainCoverHandler)
 
 		, currentState(RobotState::Active)
 		, activeStateChrono(Chrono::SECONDS)
@@ -97,10 +101,12 @@ void RobotController::loop() {
 	    		waterLevelMeter.readLevel();
 	    		if (waterOutValve.isOpen()) waterOutValve.closeValve();
 	    		if (checkSchedule()) { setCurrentState(Active); break; }
+	    		if (checkRainOut()) { setCurrentState(Active); display.setState(RobotDisplay::RainControl); break; }
 	    		digitalWrite(mainPowerPin, LOW);	// Turn off all peripherals
 	    		powerSaveCyclesCount = 0;
 	    	}
-			LowPower.powerDown(SLEEP_4S, ADC_OFF, BOD_OFF);
+	    	if (currentState == PowerSave)
+	    		LowPower.powerDown(SLEEP_4S, ADC_OFF, BOD_OFF);
 	    }
 	} break;
 	case Active: {
@@ -137,6 +143,10 @@ void RobotController::loop() {
 	    	case RobotDisplay::WaterLevel: {
 	    		waterLevelMeter.forceCurrentValuesAsAverages();
 	    	} break;
+	    	case RobotDisplay::RainControl: {
+	    		if (rainCoverHandler.isCoverOpen()) rainCoverHandler.closeCover(); else rainCoverHandler.openCover(true);
+			    display.update(now);
+	    	} break;
 	    	}
 	    	keyboard.clear();
 	    }
@@ -162,6 +172,9 @@ void RobotController::loop() {
     		display.turnOnBacklight();
 	    }
 
+	    boolean _anyActivity = checkRainOut();
+	    anyActivity |= _anyActivity;
+
 	    display.update(now);
 
 	    if (activeStateChrono.hasPassed(ACTIVE_STATE_TIME_SECONDS))
@@ -169,6 +182,7 @@ void RobotController::loop() {
 	    else {
 	    	for (int c = 0; c < 10; c++) {
 	    		keyboard.refresh();
+	    		//LowPower.powerDown(SLEEP_60MS, ADC_OFF, BOD_OFF);
 	    		delay(50);
 	    	}
 	    }
@@ -176,6 +190,28 @@ void RobotController::loop() {
 	}
 
 }
+
+boolean RobotController::checkRainOut() {
+	boolean result = false;
+
+    if (rainSensor.getIntensity() > RainIntensity::mist && !rainCoverHandler.isCoverOpen() && waterLevelMeter.readLevel() < 80) {
+    	result = true;
+    	display.setState(RobotDisplay::RainControl);
+    	display.update(now);
+    	rainCoverHandler.openCover();
+    }
+
+    if ((rainCoverHandler.isCoverOpen() && !rainCoverHandler.isManualOpen()) &&
+    		(waterLevelMeter.readLevel() >= 80 || rainSensor.getIntensity() <= RainIntensity::mist)) {
+    	result = true;
+    	display.setState(RobotDisplay::RainControl);
+    	display.update(now);
+    	rainCoverHandler.closeCover();
+    }
+
+    return result;
+}
+
 
 void RobotController::startWaterOut() {
 	if (waterLevelMeter.readLevel() > 0 && waterOutValve.valveCloseSeconds() > MIN_TIME_VAVLE_CLOSED_SECONDS) {

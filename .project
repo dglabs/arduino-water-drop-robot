@@ -42,6 +42,16 @@
 			<locationURI>ECLIPSE_HOME/arduinoPlugin/packages/arduino/hardware/avr/1.6.19/variants/eightanaloginputs</locationURI>
 		</link>
 		<link>
+			<name>libraries/AccelStepper</name>
+			<type>2</type>
+			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/AccelStepper/1.57.1</locationURI>
+		</link>
+		<link>
+			<name>libraries/CheapStepper</name>
+			<type>2</type>
+			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/CheapStepper/0.2.0</locationURI>
+		</link>
+		<link>
 			<name>libraries/Chrono</name>
 			<type>2</type>
 			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/Chrono/1.0.0</locationURI>

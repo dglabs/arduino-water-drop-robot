@@ -9,7 +9,8 @@
 #include "RobotDisplay.h"
 
 RobotDisplay::RobotDisplay(LiquidCrystal_I2C& _lcd, RTC_DS1307& _rtc, WaterLevelMeter& _waterLevelMeter
-		, WaterMotorizedValve& _waterOutValve, WaterInValve& _waterInValve, WaterFlowMeter& _waterFlowMeter) :
+		, WaterMotorizedValve& _waterOutValve, WaterInValve& _waterInValve, WaterFlowMeter& _waterFlowMeter
+		, RainSensor& _rainSensor, RainCoverHandler& _rainCoverHandler) :
 	backligtOnChrono(Chrono::SECONDS)
 	, currentState(State::Dashboard)
 	, lcd(_lcd)
@@ -18,6 +19,8 @@ RobotDisplay::RobotDisplay(LiquidCrystal_I2C& _lcd, RTC_DS1307& _rtc, WaterLevel
 	, waterOutValve(_waterOutValve)
 	, waterInValve(_waterInValve)
 	, waterFlowMeter(_waterFlowMeter)
+	, rainSensor(_rainSensor)
+	, rainCoverHandler(_rainCoverHandler)
 {
 
 }
@@ -60,8 +63,8 @@ RobotDisplay::State RobotDisplay::switchNextState() {
 	case Dashboard: next = OutValve; break;
 	case OutValve: next = InValve; break;
 	case InValve: next = WaterLevel; break;
-	case WaterLevel: next = FullTime; break;
-	case FullTime: next = Dashboard; break;
+	case WaterLevel: next = RainControl; break;
+	case RainControl: next = Dashboard; break;
 	}
 	setState(next);
 	return next;
@@ -139,7 +142,15 @@ void RobotDisplay::update(DateTime& now) {
 	    	if (i < LEVEL_SENSOR_COUNT - 1) lcd.print(';');
 	    }
 	} break;
-	case FullTime: {
+	case RainControl: {
+		RainIntensity intensity = rainSensor.getIntensity();
+	    lcd.setCursor(0, 0);
+	    lcd.print("RAIN: "); lcd.print(intensity);
+	    lcd.setCursor(0, 1);
+	    lcd.print("COVER: "); lcd.print(rainCoverHandler.isCoverOpen() ? "OPEN" : "CLOSED");
+	} break;
+
+	/*case FullTime: {
 	    lcd.setCursor(0, 0);
 	    lcd.print(now.day(), DEC);
 	    lcd.print(':');
@@ -155,7 +166,7 @@ void RobotDisplay::update(DateTime& now) {
 	    lcd.print(':');
 	    lcd.print(now.second(), DEC);
 	    lcd.print("    ");
-	} break;
+	} break;*/
 	}
 
 	if (backligtOnChrono.isRunning() && backligtOnChrono.hasPassed(BACKLIGHT_TIME_SECONDS)) {

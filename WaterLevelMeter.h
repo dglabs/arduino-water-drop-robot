@@ -14,6 +14,7 @@ const int MIN_WATER_LEVEL = 1;
 const int MAX_WATER_LEVEL = 100;
 const int LEVEL_SENSOR_COUNT = 4;
 const int STORAGE_SIZE_WATER_LEVEL = 1 + (LEVEL_SENSOR_COUNT * sizeof(int));
+const int HALL_DIFF_THRESHOLD = 12;
 
 class WaterLevelMeter {
 protected:
@@ -29,6 +30,9 @@ protected:
 
 	void save_averages(int addr);
 	void read_averages(int addr);
+	void sortAbsDiffs(uint8_t* sortedIndexes, int* sortedDiffs);
+	uint8_t sensorDiffToLevel(int diff, uint8_t index);
+
 public:
 
 	WaterLevelMeter(const uint8_t* _levelPins, const int* _initialAverageValues, const int _memAddress);

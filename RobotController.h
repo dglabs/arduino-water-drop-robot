@@ -19,6 +19,8 @@
 #include "KeyboardWithISR.h"
 #include "RobotDisplay.h"
 #include "WaterFlowMeter.h"
+#include "RainSensor.h"
+#include "RainCoverHandler.h"
 
 const long ACTIVE_STATE_TIME_SECONDS = 60;
 const long POWER_SAVE_SYCLES = 4;
@@ -42,17 +44,22 @@ protected:
 	WaterInValve& waterInValve;
 	RobotDisplay& display;
 	WaterFlowMeter& waterFlowMeter;
+	RainSensor& rainSensor;
+	RainCoverHandler& rainCoverHandler;
 
 	void setCurrentState(RobotState _state);
+	boolean checkRainOut();
 public:
-	RobotController(const uint8_t _mainPowerPin,
-			RTC_DS1307& _rtc,
-			KeyboardWithISR& _keyboard,
-			WaterLevelMeter& _waterLevelMeter,
-			WaterMotorizedValve& _waterOutValve,
-			WaterInValve& _waterInValve,
-			RobotDisplay& _display,
-			WaterFlowMeter& _waterFlowMeter);
+	RobotController(const uint8_t _mainPowerPin
+			, RTC_DS1307& _rtc
+			, KeyboardWithISR& _keyboard
+			, WaterLevelMeter& _waterLevelMeter
+			, WaterMotorizedValve& _waterOutValve
+			, WaterInValve& _waterInValve
+			, RobotDisplay& _display
+			, WaterFlowMeter& _waterFlowMeter
+			, RainSensor& _rainSensor
+			, RainCoverHandler& _rainCoverHandler);
 	virtual ~RobotController();
 
 	void loop();

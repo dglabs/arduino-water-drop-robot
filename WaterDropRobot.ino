@@ -9,6 +9,8 @@
 #include "RobotDisplay.h"
 #include "WaterFlowMeter.h"
 #include "RobotController.h"
+#include "RainSensor.h"
+#include "RainCoverHandler.h"
 
 // Date and time functions using a DS1307 RTC connected via I2C and Wire lib
 #include <Wire.h>
@@ -22,9 +24,11 @@ LiquidCrystal_I2C lcd(0x3F,16,2);
 const int WTR_OUT_ADDR = 0;
 const int WTR_LEVEL_ADDR = WTR_OUT_ADDR + STORAGE_SIZE_WATER_VALVE;
 const int WTR_VOLUME_ADDR = WTR_LEVEL_ADDR + STORAGE_SIZE_WATER_LEVEL;
+const int COVER_STATE_ADDR = WTR_VOLUME_ADDR + STORAGE_SIZE_WATER_VOLUME;
+const int RAIN_SENSOR_ADDR = COVER_STATE_ADDR + STORAGE_SIZE_COVER_HANDLER;
 
 // EPROM addresses
-const int SCHEDULE_EEPROM_ADDR = WTR_VOLUME_ADDR + STORAGE_SIZE_WATER_VOLUME;
+const int SCHEDULE_EEPROM_ADDR = RAIN_SENSOR_ADDR + STORAGE_SIZE_RAIN_SENSOR;
 
 // Main power pin
 const uint8_t MAIN_POWER = 13;
@@ -55,16 +59,30 @@ KeyboardWithISR keyboard(PIN_KEYS);
 // Water flow volume meter
 WaterFlowMeter waterFlowMeter(WTR_VOLUME_ADDR);
 
+// Rain handling
+RainSensor rainSensor(A7, RAIN_SENSOR_ADDR, rtc);
+const uint8_t PIN_STEPPER_MOTOR[] = {6, 7, 8 , 9};
+RainCoverHandler rainCoverHandler(PIN_STEPPER_MOTOR, COVER_STATE_ADDR);
+
 // Display class
-RobotDisplay display(lcd, rtc, waterLevelMeter, waterOutValve, waterInValve, waterFlowMeter);
+RobotDisplay display(lcd
+		, rtc
+		, waterLevelMeter
+		, waterOutValve
+		, waterInValve
+		, waterFlowMeter
+		, rainSensor
+		, rainCoverHandler);
 RobotController controller(MAIN_POWER
-			, rtc
-			, keyboard
-			, waterLevelMeter
-			, waterOutValve
-			, waterInValve
-			, display
-			, waterFlowMeter);
+		, rtc
+		, keyboard
+		, waterLevelMeter
+		, waterOutValve
+		, waterInValve
+		, display
+		, waterFlowMeter
+		, rainSensor
+		, rainCoverHandler);
 
 void setup () {
 	while (!Serial); // for Leonardo/Micro/Zero

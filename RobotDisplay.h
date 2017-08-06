@@ -18,6 +18,8 @@
 #include "WaterLevelMeter.h"
 #include "KeyboardWithISR.h"
 #include "WaterFlowMeter.h"
+#include "RainSensor.h"
+#include "RainCoverHandler.h"
 
 // Date and time functions using a DS1307 RTC connected via I2C and Wire lib
 
@@ -25,7 +27,7 @@ const long BACKLIGHT_TIME_SECONDS = 30;
 
 class RobotDisplay {
 public:
-	enum State { Dashboard, OutValve, InValve, WaterLevel, FullTime };
+	enum State { Dashboard, OutValve, InValve, WaterLevel, RainControl };
 protected:
 	Chrono backligtOnChrono;
 	State currentState;
@@ -38,10 +40,13 @@ protected:
 	WaterMotorizedValve& waterOutValve;
 	WaterInValve& waterInValve;
 	WaterFlowMeter& waterFlowMeter;
+	RainSensor& rainSensor;
+	RainCoverHandler& rainCoverHandler;
 
 public:
 	RobotDisplay(LiquidCrystal_I2C& _lcd, RTC_DS1307& _rtc, WaterLevelMeter& _waterLevelMeter
-			, WaterMotorizedValve& _waterOutValve, WaterInValve& _waterInValve, WaterFlowMeter& _waterFlowMeter);
+			, WaterMotorizedValve& _waterOutValve, WaterInValve& _waterInValve, WaterFlowMeter& _waterFlowMeter
+			, RainSensor& _rainSensor, RainCoverHandler& _rainCoverHandler);
 	virtual ~RobotDisplay();
 
 	void initialize();

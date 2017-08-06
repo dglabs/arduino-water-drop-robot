@@ -7,6 +7,7 @@
 
 #include "WaterLevelMeter.h"
 #include <EEPROM.h>
+#include "EEPROMUtils.h"
 
 //#define _SERIAL_DEBUG
 
@@ -36,7 +37,7 @@ WaterLevelMeter::WaterLevelMeter(const uint8_t* _levelPins, const int* _initialA
 	if (invalidAverages) {
 		for (int i = 0; i < LEVEL_SENSOR_COUNT; i++)
 			averageValues[i] = initialAverageValues[i];
-		save_averages(memAddress +  + sizeof(currentLevel));
+		save_averages(memAddress + sizeof(currentLevel));
 	}
 
 	// Initialize averages calculation in this new cycle
@@ -50,50 +51,81 @@ WaterLevelMeter::~WaterLevelMeter() {
 	// TODO Auto-generated destructor stub
 }
 
+
+void WaterLevelMeter::sortAbsDiffs(uint8_t* sortedIndexes, int* sortedDiffs) {
+	int buf[LEVEL_SENSOR_COUNT];
+	for (uint8_t i = 0; i < LEVEL_SENSOR_COUNT; i++) buf[i] = sortedDiffs[i];
+	
+	for (uint8_t round = 0; round < LEVEL_SENSOR_COUNT; round++) {
+		int idx = 0;
+		int max = 0;
+		for (uint8_t i = 0; i < LEVEL_SENSOR_COUNT; i++) {
+			if (abs(buf[i]) > abs(max)) {
+				idx = i;
+				max = buf[i]; 
+			}
+		}
+		buf[round] = 0;
+		sortedDiffs[round] = max;
+		sortedIndexes[round] = idx;		
+	}	
+}
+
+uint8_t WaterLevelMeter::sensorDiffToLevel(int diff, uint8_t index) {
+	int level = 0;
+	if (diff > 0)
+		level = (uint8_t)(((float)((index + 1) * 2 - 1)/(float)((LEVEL_SENSOR_COUNT + 1) * 2))*100.0);
+	else
+		level = (uint8_t)(((float)((index + 1) * 2)/(float)((LEVEL_SENSOR_COUNT + 1) * 2))*100.0);
+	return level;
+}
+
 uint8_t WaterLevelMeter::readLevel() {
 	uint8_t level = 0;
+	uint8_t sortedIndexes[LEVEL_SENSOR_COUNT];
 	int diffs[LEVEL_SENSOR_COUNT];
-	for (uint16_t i = 0; i < LEVEL_SENSOR_COUNT; i++) {
+	
+	for (uint8_t i = 0; i < LEVEL_SENSOR_COUNT; i++) {
 		currentValues[i] = analogRead(levelPins[i]);
 		// Ignore disconnected lines
 		if (currentValues[i] == 0 || (currentValues[i] > 900 || currentValues[i] < 100)) currentValues[i] = averageValues[i];
 
 		diffs[i] = currentValues[i] - averageValues[i];
 	}
-
-	// Find the value with max difference
-	int maxDiffIndex = -1;
-	int maxDiff = 0;
-	for (uint16_t i = 0; i < LEVEL_SENSOR_COUNT; i++)
-		if (abs(diffs[i]) > abs(maxDiff)) {
-			maxDiff = diffs[i];
-			maxDiffIndex = i;
-		}
-
+	
 	// Update sum values for averages
-	for (int i = 0; i < LEVEL_SENSOR_COUNT; i++) {
-		if (i != maxDiffIndex)
+	for (uint8_t i = 0; i < LEVEL_SENSOR_COUNT; i++) {
+		if (abs(diffs[i]) < HALL_DIFF_THRESHOLD)
 			sumValues[i] += currentValues[i];
 		else
 			sumValues[i] += averageValues[i];
 	}
 
-	if (maxDiffIndex >= 0 && abs(maxDiff) >= 12) {
-		if (maxDiff > 0) {
-			level = (uint8_t)(((float)((maxDiffIndex + 1) * 2 - 1)/(float)((LEVEL_SENSOR_COUNT + 1) * 2))*100.0);
-#ifdef _SERIAL_DEBUG
-			Serial.print("CUR > AVG, Level=");
-			Serial.println(level);
-#endif
-		}
-		else {
-			level = (uint8_t)(((float)((maxDiffIndex + 1) * 2)/(float)((LEVEL_SENSOR_COUNT + 1) * 2))*100.0);
-#ifdef _SERIAL_DEBUG
-			Serial.print("CUR < AVG, Level=");
-			Serial.println(level);
-#endif
+	sortAbsDiffs(sortedIndexes, diffs);
+	
+	for (uint8_t i = 0; i < LEVEL_SENSOR_COUNT; i++) {
+		if (abs(diffs[i]) >= HALL_DIFF_THRESHOLD)
+			level = sensorDiffToLevel(diffs[i], sortedIndexes[i]);
+		else break;
+		
+		// If level was detected (any sensor is active), then update currentLevel and save it
+		// If max sensor diff produces fake level, then ignore it and take next one
+		if (level > 0 && level <= 100 && level != currentLevel && abs(level - currentLevel) <= 20) {
+			currentLevel = level;
+			EEPROM.write(memAddress, currentLevel);
+			break;
 		}
 	}
+	
+	// If all levels seem to be fake, then assume first level is right
+	if (level == 0 && abs(diffs[0]) >= HALL_DIFF_THRESHOLD) {
+		level = sensorDiffToLevel(diffs[0], sortedIndexes[0]);
+		if (level > 0 && level <= 100 && level != currentLevel) {
+			currentLevel = level;
+			EEPROM.write(memAddress, currentLevel);
+		}
+	}
+	
 
 #ifdef _SERIAL_DEBUG
 	Serial.print("CUR:");
@@ -111,12 +143,6 @@ uint8_t WaterLevelMeter::readLevel() {
 #endif
 
 	scanCount++;
-
-	// If level was detected (any sensor is active), then update currentLevel and save it
-	if (level > 0 && level <= 100 && level != currentLevel) {
-		currentLevel = level;
-		EEPROM.write(memAddress, currentLevel);
-	}
 
 	// If sum average values are going to overflow, then calculate averages and save to EEPROM
 	if (sumValues[0] > 10000) {
@@ -140,15 +166,11 @@ void WaterLevelMeter::forceCurrentValuesAsAverages() {
 
 // Save averages to memory
 void WaterLevelMeter::save_averages(int addr) {
-	uint8_t *raw = (uint8_t *)&averageValues;
-	for (uint16_t i = 0; i < sizeof(averageValues); i++)
-		EEPROM.write(addr + i, raw[i]);
+	EEPROMUtils::save_bytes(addr, (uint8_t *)&averageValues, sizeof(averageValues));
 }
 
 void WaterLevelMeter::read_averages(int addr) {
-	uint8_t *raw = (uint8_t *)&averageValues;
-	for (uint16_t i = 0; i < sizeof(averageValues); i++)
-		raw[i] = EEPROM.read(addr + i);
+	EEPROMUtils::read_bytes(addr, (uint8_t *)&averageValues, sizeof(averageValues));
 }
 
 
