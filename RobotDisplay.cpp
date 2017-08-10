@@ -102,15 +102,21 @@ void RobotDisplay::update(DateTime& now) {
 	    if (waterOutValve.isOpen()) {
 	    	lcd.print(waterOutValve.valveOpenSeconds());
 	    	lcd.print("s");
-	    }
-	    else
-	    	lcd.print("     ");
 
-	    lcd.setCursor(0, 1);
-	    lcd.print("L:");
-	    lcd.print(waterLevelMeter.readLevel());
-	    lcd.print("% ");
-	    lcd.print(waterFlowMeter.getTotalVolume());
+		    lcd.setCursor(0, 1);
+		    lcd.print(waterFlowMeter.getVolumeFromStart());
+		    lcd.print("l ");
+		    lcd.print(waterFlowMeter.getVolumePerMinute());
+		    lcd.print("l/m");
+	    }
+	    else {
+	    	lcd.print("     ");
+		    lcd.setCursor(0, 1);
+		    lcd.print("L:");
+		    lcd.print(waterLevelMeter.readLevel());
+		    lcd.print("% ");
+	    }
+
 	} break;
 	case InValve: {
 	    lcd.setCursor(0, 0);
@@ -141,13 +147,13 @@ void RobotDisplay::update(DateTime& now) {
 	    	lcd.print(waterLevelMeter.getAverageValues()[i] - waterLevelMeter.getCurrentValues()[i]);
 	    	if (i < LEVEL_SENSOR_COUNT - 1) lcd.print(';');
 	    }
+	    lcd.print("   ");
 	} break;
 	case RainControl: {
-		RainIntensity intensity = rainSensor.getIntensity();
 	    lcd.setCursor(0, 0);
-	    lcd.print("RAIN: "); lcd.print(intensity);
+	    lcd.print("RAIN: "); lcd.print(rainSensor.getIntensityString());
 	    lcd.setCursor(0, 1);
-	    lcd.print("COVER: "); lcd.print(rainCoverHandler.isCoverOpen() ? "OPEN" : "CLOSED");
+	    lcd.print("COVER: "); lcd.print(rainCoverHandler.isCoverOpen() ? "OPEN  " : "CLOSED");
 	} break;
 
 	/*case FullTime: {

@@ -21,6 +21,7 @@
 #include "WaterFlowMeter.h"
 #include "RainSensor.h"
 #include "RainCoverHandler.h"
+#include "WaterSchedule.h"
 
 const long ACTIVE_STATE_TIME_SECONDS = 60;
 const long POWER_SAVE_SYCLES = 4;
@@ -46,9 +47,12 @@ protected:
 	WaterFlowMeter& waterFlowMeter;
 	RainSensor& rainSensor;
 	RainCoverHandler& rainCoverHandler;
+	WaterSchedule& schedule;
 
 	void setCurrentState(RobotState _state);
 	boolean checkRainOut();
+	boolean processScheduleEvent();
+
 public:
 	RobotController(const uint8_t _mainPowerPin
 			, RTC_DS1307& _rtc
@@ -59,14 +63,12 @@ public:
 			, RobotDisplay& _display
 			, WaterFlowMeter& _waterFlowMeter
 			, RainSensor& _rainSensor
-			, RainCoverHandler& _rainCoverHandler);
+			, RainCoverHandler& _rainCoverHandler
+			, WaterSchedule& _schedule);
 	virtual ~RobotController();
 
 	void loop();
 
-	void startWaterOut();
-	void startWaterIn();
-	boolean checkWaterLevel();
 	boolean checkSchedule();
 };
 

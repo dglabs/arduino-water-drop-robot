@@ -8,6 +8,8 @@
 #include "RainSensor.h"
 #include "EEPROMUtils.h"
 
+const char* INTENSITY_NAMES[] = {"No rain", "Mist", "Moderate", "Intense" };
+
 RainSensor::RainSensor(const uint8_t _pin, const int _memAddress, RTC_DS1307& _rtc):
 	pin(_pin)
 	, memAddress(_memAddress)
@@ -58,6 +60,10 @@ RainIntensity RainSensor::getIntensity() {
 		lastIntensity = newValue;
 	}
 	return lastIntensity;
+}
+
+const char* RainSensor::getIntensityString() {
+	return INTENSITY_NAMES[getIntensity()];
 }
 
 void RainSensor::getLastRainInfo(LastRainInfo& info) const {

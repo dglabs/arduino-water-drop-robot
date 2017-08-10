@@ -11,6 +11,8 @@
 
 //#define _SERIAL_DEBUG
 
+const int MIN_LEVEL_DIFF = 25;
+
 WaterLevelMeter::WaterLevelMeter(const uint8_t* _levelPins, const int* _initialAverageValues, const int _memAddress) :
 	levelPins(_levelPins)
 	, memAddress(_memAddress)
@@ -110,7 +112,7 @@ uint8_t WaterLevelMeter::readLevel() {
 		
 		// If level was detected (any sensor is active), then update currentLevel and save it
 		// If max sensor diff produces fake level, then ignore it and take next one
-		if (level > 0 && level <= 100 && level != currentLevel && abs(level - currentLevel) <= 20) {
+		if (level > 0 && level <= 100 && level != currentLevel && abs(level - currentLevel) <= MIN_LEVEL_DIFF) {
 			currentLevel = level;
 			EEPROM.write(memAddress, currentLevel);
 			break;

@@ -12,6 +12,7 @@
 #include <RTClib.h>
 
 const uint32_t MIN_RAIN_DURATION = 600l;	// In unixtime seconds
+const uint32_t MIN_RAIN_TIME_TO_OPEN_COVER = 60l;	// In unixtime seconds
 
 enum RainIntensity { none, mist, moderate, intense };
 const RainIntensity MIN_RAIN_INTENSITY = RainIntensity::moderate;
@@ -36,6 +37,16 @@ struct LastRainInfo {
 		this->duration = src.duration;
 		this->intensity = src.intensity;
 	}
+
+	// Calculate if enough water poured depending of rain duration and intensity
+	boolean enoughRainPoured() {
+		switch (intensity) {
+		case RainIntensity::mist: return duration > 14400;	// four hours mist rain
+		case RainIntensity::moderate: return duration > 3600;	// one hour moderate rain
+		case RainIntensity::intense: return duration > 1200;	// half hour intense rain
+		default: return false;
+		}
+	}
 };
 
 const int STORAGE_SIZE_RAIN_SENSOR = sizeof(LastRainInfo);
@@ -58,7 +69,8 @@ public:
 	virtual ~RainSensor();
 
 	RainIntensity getIntensity();
-	long secondsFromRainStarted() const { return rainStartedTime > 0 ? rtc.now().unixtime() - rainStartedTime : 0; }
+	const char* getIntensityString();
+	unsigned long secondsFromRainStarted() const { return rainStartedTime > 0 ? rtc.now().unixtime() - rainStartedTime : 0; }
 
 	void getLastRainInfo(LastRainInfo& info) const;
 };

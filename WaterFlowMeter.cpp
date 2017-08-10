@@ -8,15 +8,15 @@
 #include <Arduino.h>
 #include "WaterFlowMeter.h"
 #include <EEPROM.h>
+#include "EEPROMUtils.h"
 
 volatile unsigned long flowCounter = 0;
 
 const int ISR_PIN = 3;
+const long TICKS_PER_LITER = 410;
 
 void waterFlow_ISR() {
 	flowCounter++;
-	Serial.print(flowCounter);
-	Serial.println();
 }
 
 WaterFlowMeter::WaterFlowMeter(const int _memAddress):
@@ -28,15 +28,15 @@ WaterFlowMeter::WaterFlowMeter(const int _memAddress):
 	pinMode(ISR_PIN, INPUT);
 	digitalWrite(ISR_PIN, LOW);
 
-	totalVolume = startedVolume = readLong(memAddress);
+	totalVolume = startedVolume = EEPROMUtils::readULong(memAddress);
 	if (totalVolume > 0xEFFFFFFF) {
 		totalVolume = startedVolume = 0;
-		saveLong(memAddress, totalVolume);
+		EEPROMUtils::saveULong(memAddress, totalVolume);
 	}
 
 	flowCounter = totalVolume;
 
-	attachInterrupt(ISR_PIN, waterFlow_ISR, RISING);
+	attachInterrupt(digitalPinToInterrupt(ISR_PIN), waterFlow_ISR, RISING);
 }
 
 WaterFlowMeter::~WaterFlowMeter() {
@@ -50,30 +50,23 @@ void WaterFlowMeter::startWaterOut() {
 unsigned long WaterFlowMeter::stopWaterOut() {
 	unsigned long volume = getVolumeFromStart();
 	totalVolume = startedVolume = flowCounter;
-	saveLong(memAddress, totalVolume);
+	EEPROMUtils::saveULong(memAddress, totalVolume);
 	startedChrono.stop();
 	return volume;
 }
 
-unsigned long WaterFlowMeter::getVolumeFromStart() {
-	return flowCounter - startedVolume;
+unsigned long WaterFlowMeter::getVolumeFromStart() const {
+	return (flowCounter - startedVolume) / TICKS_PER_LITER;
 }
-unsigned long WaterFlowMeter::getTotalVolume() {
+unsigned long WaterFlowMeter::getTotalVolume(){
 	totalVolume = flowCounter;
-	return totalVolume;
+	return totalVolume / TICKS_PER_LITER;
 }
 
-void WaterFlowMeter::saveLong(int addr, unsigned long value) {
-	uint8_t *raw = (uint8_t *)&value;
-	for (uint16_t i = 0; i < sizeof(value); i++)
-		EEPROM.write(addr + i, raw[i]);
+unsigned long WaterFlowMeter::getVolumePerMinute() const {
+	if (startedChrono.elapsed() > 0)
+		return getVolumeFromStart() / startedChrono.elapsed() / 60;
+	return 0;
 }
 
-unsigned long WaterFlowMeter::readLong(int addr) {
-	unsigned long value = 0;
-	uint8_t *raw = (uint8_t *)&value;
-	for (uint16_t i = 0; i < sizeof(value); i++)
-		raw[i] = EEPROM.read(addr + i);
-	return value;
-}
 

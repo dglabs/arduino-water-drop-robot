@@ -32,7 +32,7 @@ struct ScheduleEvent {
 	ScheduleEvent(EventType _type, DateTime _checkTime, int _duration, int _liters
 			, uint8_t _minTemperature, uint8_t _minLevel
 			, uint8_t _maxLevel, uint8_t _flags) :
-		type(type)
+		type(_type)
 		, checkTime(_checkTime.unixtime())
 		, duration(_duration)
 		, liters(_liters)
@@ -50,7 +50,8 @@ struct ShcheduleHeader {
 
 	boolean isValid() const {
 		return startDate > 0 && startDate < 0xFFFFFFFF &&
-				stopDate > 0 && stopDate < 0xFFFFFFFF;
+				stopDate > 0 && stopDate < 0xFFFFFFFF && (minTemperature > 5 && minTemperature < 20) &&
+				(numRecords > 0 && numRecords <= 10);
 	}
 
 	ShcheduleHeader() {}
@@ -59,7 +60,7 @@ struct ShcheduleHeader {
 		startDate(_startDate.unixtime())
 		, stopDate(_stopDate.unixtime())
 		, minTemperature(_minTemperature)
-		, numRecords(numRecords) {}
+		, numRecords(_numRecords) {}
 };
 
 class WaterSchedule {
@@ -69,11 +70,22 @@ private:
 	RTC_DS1307& rtc;
 	RainSensor& rainSensor;
 
+	DateTime now;
 	ShcheduleHeader header;
 	ScheduleEvent currentEvent;
+
 public:
 	WaterSchedule(const int _memAddr, RTC_DS1307& _rtc, RainSensor& _rainSensor);
 	virtual ~WaterSchedule();
+
+	boolean scanEvents();
+
+	ShcheduleHeader getHeader() const { return header; }
+	ScheduleEvent& getCurrentEvent() { return currentEvent; }
+
+	boolean isEventAppropriate(ScheduleEvent& event);
+	void dismissCurrentEvent() { currentEvent.type = EventType::None; }
+	boolean isInActiveDateRange();
 };
 
 #endif /* WATERSCHEDULE_H_ */

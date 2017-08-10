@@ -10,8 +10,8 @@
 
 #define _SERIAL_DEBUG
 
-const DateTime waterOutTime(2017, 06, 10, 21, 0, 0);
-const DateTime waterInTime(2017, 06, 10, 10, 0, 0);
+//const DateTime waterOutTime(2017, 06, 10, 21, 0, 0);
+//const DateTime waterInTime(2017, 06, 10, 10, 0, 0);
 
 RobotController::RobotController(const uint8_t _mainPowerPin
 		, RTC_DS1307& _rtc
@@ -22,7 +22,8 @@ RobotController::RobotController(const uint8_t _mainPowerPin
 		, RobotDisplay& _display
 		, WaterFlowMeter& _waterFlowMeter
 		, RainSensor& _rainSensor
-		, RainCoverHandler& _rainCoverHandler) :
+		, RainCoverHandler& _rainCoverHandler
+		, WaterSchedule& _schedule) :
 
 		mainPowerPin(_mainPowerPin)
 		, rtc(_rtc)
@@ -34,6 +35,7 @@ RobotController::RobotController(const uint8_t _mainPowerPin
 		, waterFlowMeter(_waterFlowMeter)
 		, rainSensor(_rainSensor)
 		, rainCoverHandler(_rainCoverHandler)
+		, schedule(_schedule)
 
 		, currentState(RobotState::Active)
 		, activeStateChrono(Chrono::SECONDS)
@@ -66,8 +68,65 @@ void RobotController::setCurrentState(RobotState _state) {
 	}
 }
 
+// Process the current schedule action if any and @return true if device should stay active
+boolean RobotController::processScheduleEvent() {
+	if (!schedule.isEventAppropriate(schedule.getCurrentEvent())) { schedule.dismissCurrentEvent(); return false; }
+	switch (schedule.getCurrentEvent().type) {
+	case EventType::WaterIn: {
+		if (waterOutValve.isOpen()) waterOutValve.closeValve();
+		if (!waterInValve.isOpen()) {
+			if (waterLevelMeter.readLevel() <= schedule.getCurrentEvent().minLevel &&
+					waterInValve.valveCloseSeconds() > MIN_TIME_VAVLE_CLOSED_SECONDS) {
+				waterInValve.openValve();
+				display.setState(RobotDisplay::InValve);
+				return true;
+			}
+			else return false;
+		}
+		else {
+	    	if (waterLevelMeter.readLevel() > schedule.getCurrentEvent().maxLevel ||
+	    			waterInValve.valveOpenSeconds() > schedule.getCurrentEvent().duration) {
+	    		waterInValve.closeValve();
+	    		return false;
+	    	}
+	    	return true;
+		}
+	} break;
+	case EventType::WaterOut: {
+		if (waterInValve.isOpen()) waterInValve.closeValve();
+		if (!waterOutValve.isOpen()) {
+			if (waterLevelMeter.readLevel() > schedule.getCurrentEvent().minLevel &&
+					waterOutValve.valveCloseSeconds() > MIN_TIME_VAVLE_CLOSED_SECONDS) {
+				waterOutValve.openValve();
+				display.setState(RobotDisplay::OutValve);
+				waterFlowMeter.startWaterOut();
+				return true;
+			}
+			else return false;
+		}
+		else {
+			if (waterLevelMeter.readLevel() <= schedule.getCurrentEvent().minLevel ||
+					waterOutValve.valveOpenSeconds() > schedule.getCurrentEvent().duration ||
+					waterFlowMeter.getVolumeFromStart() > schedule.getCurrentEvent().liters) {
+				waterOutValve.closeValve();
+	    		waterOutValve.closeValve();
+	    		waterFlowMeter.stopWaterOut();
+	    		return false;
+			}
+			else return true;	// Continue water pouring
+		}
+	} break;
+	}
+
+	return false;
+}
+
 boolean RobotController::checkSchedule() {
-	DateTime waterIn(now.year(), now.month(), now.day(), waterInTime.hour(), waterInTime.minute(), waterInTime.second());
+	boolean result = schedule.scanEvents();
+	if (result) result = processScheduleEvent();
+	return result;
+
+	/*DateTime waterIn(now.year(), now.month(), now.day(), waterInTime.hour(), waterInTime.minute(), waterInTime.second());
 	DateTime waterOut(now.year(), now.month(), now.day(), waterOutTime.hour(), waterOutTime.minute(), waterOutTime.second());
 
 	TimeSpan inSpan = now - waterIn;
@@ -81,10 +140,9 @@ boolean RobotController::checkSchedule() {
 	if (outSpan.totalseconds() > 0 && outSpan.totalseconds() < MAX_OUT_VALVE_OPEN_TIME_SECONDS / 2) {
 		startWaterOut();
 		return true;
-	}
-
 
 	return false;
+	}*/
 }
 
 void RobotController::loop() {
@@ -125,19 +183,32 @@ void RobotController::loop() {
 	    	case RobotDisplay::OutValve: {
 	    		if (waterOutValve.isOpen() && waterOutValve.valveOpenSeconds() > 5) {
 	    			waterOutValve.closeValve();
+	    			schedule.dismissCurrentEvent();
 	    		}
 	    		else {
-	    			if (waterOutValve.valveCloseSeconds() > MIN_TIME_VAVLE_CLOSED_SECONDS)
-	    				waterOutValve.openValve();
+	    			schedule.getCurrentEvent().type = EventType::WaterOut;
+	    			schedule.getCurrentEvent().checkTime = now.unixtime();
+	    			schedule.getCurrentEvent().duration = MAX_OUT_VALVE_OPEN_TIME_SECONDS;
+	    			schedule.getCurrentEvent().liters = 300;
+	    			schedule.getCurrentEvent().minLevel = 0;
+	    			schedule.getCurrentEvent().maxLevel = 100;
+	    			schedule.getCurrentEvent().flags = 0;
+
    				}
 	    	} break;
 	    	case RobotDisplay::InValve: {
 	    		if (waterInValve.isOpen() && waterInValve.valveOpenSeconds() > 5) {
 	    			waterInValve.closeValve();
+	    			schedule.dismissCurrentEvent();
 	    		}
 	    		else {
-	    			if (waterInValve.valveCloseSeconds() > MIN_TIME_VAVLE_CLOSED_SECONDS)
-	    				waterInValve.openValve();
+	    			schedule.getCurrentEvent().type = EventType::WaterIn;
+	    			schedule.getCurrentEvent().checkTime = now.unixtime();
+	    			schedule.getCurrentEvent().duration = MAX_IN_VALVE_OPEN_TIME_SECONDS;
+	    			schedule.getCurrentEvent().liters = 300;
+	    			schedule.getCurrentEvent().minLevel = 0;
+	    			schedule.getCurrentEvent().maxLevel = 70;
+	    			schedule.getCurrentEvent().flags = 0;
 	    		}
 	    	} break;
 	    	case RobotDisplay::WaterLevel: {
@@ -151,30 +222,16 @@ void RobotController::loop() {
 	    	keyboard.clear();
 	    }
 
-	    if (waterInValve.isOpen()) {
-	    	anyActivity = true;
-	    	if (!checkWaterLevel() || waterInValve.valveOpenSeconds() > MAX_IN_VALVE_OPEN_TIME_SECONDS) {
-	    		waterInValve.closeValve();
-	    		waterFlowMeter.stopWaterOut();
-	    	}
-	    }
+	    boolean _anyActivity = processScheduleEvent();
+	    anyActivity |= _anyActivity;
 
-	    if (waterOutValve.isOpen()) {
-	    	anyActivity = true;
-	    	if (!checkWaterLevel() || waterOutValve.valveOpenSeconds() > MAX_OUT_VALVE_OPEN_TIME_SECONDS) {
-	    		waterOutValve.closeValve();
-	    		waterOutValve.closeValve();
-	    	}
-	    }
+	    _anyActivity = checkRainOut();
+	    anyActivity |= _anyActivity;
 
 	    if (anyActivity) {
 	    	activeStateChrono.restart();
     		display.turnOnBacklight();
 	    }
-
-	    boolean _anyActivity = checkRainOut();
-	    anyActivity |= _anyActivity;
-
 	    display.update(now);
 
 	    if (activeStateChrono.hasPassed(ACTIVE_STATE_TIME_SECONDS))
@@ -194,7 +251,8 @@ void RobotController::loop() {
 boolean RobotController::checkRainOut() {
 	boolean result = false;
 
-    if (rainSensor.getIntensity() > RainIntensity::mist && !rainCoverHandler.isCoverOpen() && waterLevelMeter.readLevel() < 80) {
+    if (rainSensor.getIntensity() > RainIntensity::mist && !rainCoverHandler.isCoverOpen() && waterLevelMeter.readLevel() < 80 &&
+    		rainSensor.secondsFromRainStarted() > MIN_RAIN_TIME_TO_OPEN_COVER && schedule.isInActiveDateRange()) {
     	result = true;
     	display.setState(RobotDisplay::RainControl);
     	display.update(now);
@@ -202,7 +260,8 @@ boolean RobotController::checkRainOut() {
     }
 
     if ((rainCoverHandler.isCoverOpen() && !rainCoverHandler.isManualOpen()) &&
-    		(waterLevelMeter.readLevel() >= 80 || rainSensor.getIntensity() <= RainIntensity::mist)) {
+    		(waterLevelMeter.readLevel() >= 80 || rainSensor.getIntensity() <= RainIntensity::mist) ||
+			!schedule.isInActiveDateRange()) {
     	result = true;
     	display.setState(RobotDisplay::RainControl);
     	display.update(now);
@@ -213,32 +272,6 @@ boolean RobotController::checkRainOut() {
 }
 
 
-void RobotController::startWaterOut() {
-	if (waterLevelMeter.readLevel() > 0 && waterOutValve.valveCloseSeconds() > MIN_TIME_VAVLE_CLOSED_SECONDS) {
-		waterInValve.closeValve();
-		waterOutValve.openValve();
-		display.setState(RobotDisplay::OutValve);
-		waterFlowMeter.startWaterOut();
-	}
-}
-
-void RobotController::startWaterIn() {
-	if (waterLevelMeter.readLevel() <= 30 && waterInValve.valveCloseSeconds() > MIN_TIME_VAVLE_CLOSED_SECONDS) {
-		waterOutValve.closeValve();
-		waterInValve.openValve();
-		display.setState(RobotDisplay::InValve);
-	}
-}
-
-boolean RobotController::checkWaterLevel() {
-	if (waterInValve.isOpen()) {
-		if (waterLevelMeter.readLevel() > 70) return false;
-	}
-	if (waterOutValve.isOpen()) {
-		if (waterLevelMeter.readLevel() <= 0) return false;
-	}
-	return true;
-}
 
 
 

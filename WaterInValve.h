@@ -12,7 +12,7 @@
 #include <Chrono.h>
 #include "Valve.h"
 
-const long MAX_IN_VALVE_OPEN_TIME_SECONDS = 500;
+const long MAX_IN_VALVE_OPEN_TIME_SECONDS = 250;
 
 class WaterInValve: public Valve {
 protected:

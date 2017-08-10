@@ -19,3 +19,12 @@ static void EEPROMUtils::read_bytes(int addr, uint8_t *raw, uint16_t size) {
 		raw[i] = EEPROM.read(addr + i);
 }
 
+static void EEPROMUtils::saveULong(int addr, unsigned long& value) {
+	EEPROMUtils::save_bytes(addr, (uint8_t*)&value, sizeof(unsigned long));
+}
+
+static unsigned long EEPROMUtils::readULong(int addr) {
+	unsigned long value;
+	EEPROMUtils::read_bytes(addr, (uint8_t*)&value, sizeof(unsigned long));
+	return value;
+}

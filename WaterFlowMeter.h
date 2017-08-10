@@ -27,8 +27,10 @@ public:
 
 	void startWaterOut();
 	unsigned long stopWaterOut();
-	unsigned long getVolumeFromStart();
+	unsigned long getVolumeFromStart() const;
 	unsigned long getTotalVolume();
+
+	unsigned long getVolumePerMinute() const;
 };
 
 #endif /* WATERFLOWMETER_H_ */

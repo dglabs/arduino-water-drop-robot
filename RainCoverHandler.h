@@ -10,26 +10,29 @@
 
 
 #include <Arduino.h>
-#include <CheapStepper.h>
-//#include <AccelStepper.h>
+#include <Chrono.h>
 
-const int STORAGE_SIZE_COVER_HANDLER = sizeof(uint8_t);
+const int STORAGE_SIZE_COVER_HANDLER = sizeof(uint8_t) + sizeof(unsigned long);
+const unsigned long TIME_TO_OPEN_COVER_SEC = 60;
+const unsigned long MAX_TIME_TO_OPEN_COVER_SEC = 60;
 
 class RainCoverHandler {
 private:
-	const uint8_t* motorPins;
+	const uint8_t motorPowerPin;
+	const uint8_t motorDirectionPin;
+	const uint8_t tiltSensorPin;
 	const int memAddress;
 
 	boolean isOpenedManually;
 	uint8_t currentState;
-	CheapStepper stepper;
-	//AccelStepper stepper;
+	unsigned long timeToOpenCover;
+	Chrono operationChrono;
 
 public:
-	RainCoverHandler(const uint8_t* _motorPins, int _memAddress);
+	RainCoverHandler(const uint8_t _motorPowerPin, const uint8_t _motorDirectionPin, const uint8_t _tiltSensorPin, int _memAddress);
 	virtual ~RainCoverHandler();
 
-	boolean isCoverOpen() const;
+	boolean isCoverOpen();
 	void openCover(boolean manual = false);
 	void closeCover();
 

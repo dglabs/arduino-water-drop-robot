@@ -11,6 +11,7 @@
 #include "RobotController.h"
 #include "RainSensor.h"
 #include "RainCoverHandler.h"
+#include "WaterSchedule.h"
 
 // Date and time functions using a DS1307 RTC connected via I2C and Wire lib
 #include <Wire.h>
@@ -59,10 +60,16 @@ KeyboardWithISR keyboard(PIN_KEYS);
 // Water flow volume meter
 WaterFlowMeter waterFlowMeter(WTR_VOLUME_ADDR);
 
+// Scheduler
+WaterSchedule schedule(SCHEDULE_EEPROM_ADDR, rtc, rainSensor);
+
 // Rain handling
 RainSensor rainSensor(A7, RAIN_SENSOR_ADDR, rtc);
-const uint8_t PIN_STEPPER_MOTOR[] = {6, 7, 8 , 9};
-RainCoverHandler rainCoverHandler(PIN_STEPPER_MOTOR, COVER_STATE_ADDR);
+const uint8_t COVER_MOTOR_POWER_PIN = 8;
+const uint8_t COVER_MOTOR_DIRECTION_PIN = 7;
+const uint8_t TILT_SENSOR_PIN = 6;
+RainCoverHandler rainCoverHandler(COVER_MOTOR_POWER_PIN, COVER_MOTOR_DIRECTION_PIN, TILT_SENSOR_PIN, COVER_STATE_ADDR);
+
 
 // Display class
 RobotDisplay display(lcd
@@ -82,7 +89,8 @@ RobotController controller(MAIN_POWER
 		, display
 		, waterFlowMeter
 		, rainSensor
-		, rainCoverHandler);
+		, rainCoverHandler
+		, schedule);
 
 void setup () {
 	while (!Serial); // for Leonardo/Micro/Zero
@@ -103,7 +111,18 @@ void setup () {
 		// rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
 	}
 
-	waterOutValve.closeValve();
+	if (schedule.isInActiveDateRange())
+		waterOutValve.closeValve();
+	else {
+		// Prepare system to winter operation
+		if (!waterOutValve.isOpen())
+			waterOutValve.openValve();
+		waterInValve.closeValve();
+		if (rainCoverHandler.isCoverOpen())
+			rainCoverHandler.closeCover();
+	}
+
+
 	display.initialize();
 	lcd.print("Test");
 }

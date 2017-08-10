@@ -5,6 +5,7 @@
  *      Author: dennis
  */
 
+#include <RTClib.h>
 #include "WaterSchedule.h"
 #include "EEPROMUtils.h"
 
@@ -16,11 +17,11 @@ const ScheduleEvent DefaultEvents[] = {
 		, ScheduleEvent(EventType::WaterOut, DateTime(2017, 06, 10, 16, 0, 0), 200 /*duration*/, 50 /*liters*/, 30 /*minTemperature*/
 				, 0 /*minLevel*/, 100 /*maxLevel*/, EventFlags::SkipIfRecentRain)
 		// Additional backup event if it was raining
-		, ScheduleEvent(EventType::WaterOut, DateTime(2017, 06, 10, 22, 0, 0), 200 /*duration*/, 50 /*liters*/, 15 /*minTemperature*/
+		, ScheduleEvent(EventType::WaterOut, DateTime(2017, 06, 10, 22, 0, 0), 100 /*duration*/, 50 /*liters*/, 15 /*minTemperature*/
 				, 0 /*minLevel*/, 100 /*maxLevel*/, 0)
 		// Event to fill-in the tank
-		, ScheduleEvent(EventType::WaterIn, DateTime(2017, 06, 10, 13, 0, 0), 500 /*duration*/, 300 /*liters*/, 10 /*minTemperature*/
-				, 30 /*minLevel*/, 80 /*maxLevel*/, 0)
+		, ScheduleEvent(EventType::WaterIn, DateTime(2017, 06, 10, 13, 0, 0), 250 /*duration*/, 300 /*liters*/, 10 /*minTemperature*/
+				, 30 /*minLevel*/, 70 /*maxLevel*/, 0)
 };
 
 const ShcheduleHeader DefaultHeader(
@@ -51,3 +52,61 @@ WaterSchedule::~WaterSchedule() {
 	// TODO Auto-generated destructor stub
 }
 
+boolean WaterSchedule::isInActiveDateRange() {
+	DateTime bufDateStart(header.startDate);
+	DateTime bufDateEnd(header.stopDate);
+
+	DateTime startDate(now.year(), bufDateStart.month(), bufDateStart.day(), bufDateStart.hour(), bufDateStart.minute(), bufDateStart.second());
+	DateTime endDate(now.year(), bufDateEnd.month(), bufDateEnd.day(), bufDateEnd.hour(), bufDateEnd.minute(), bufDateEnd.second());
+
+	return now.unixtime() >= startDate.unixtime() && now.unixtime() <= endDate.unixtime();
+}
+
+
+boolean WaterSchedule::isEventAppropriate(ScheduleEvent& event) {
+	boolean result = false;
+	if (event.type == EventType::None) return false;
+
+	DateTime eventTime(event.checkTime);
+	DateTime actionTime(now.year(), now.month(), now.day(), eventTime.hour(), eventTime.minute(), eventTime.second());
+
+	TimeSpan eventSpan = now - eventTime;
+
+	if (eventSpan.totalseconds() < event.duration) {
+		result = true;
+
+		// TODO: Check min temperature and set result = false if needed
+
+		// Check recent rain flag
+		if (event.flags & EventFlags::SkipIfRecentRain) {
+			LastRainInfo rainInfo;
+			rainSensor.getLastRainInfo(rainInfo);
+
+			if (rainInfo.startTime > 0 && rainInfo.startTime < 0xFFFFFFFF) {
+				DateTime lastRaintTime(rainInfo.startTime);
+				TimeSpan rainSpan = now - lastRaintTime;
+
+				if (rainSpan.days() <= 1 && rainInfo.enoughRainPoured())
+					result = false;
+			}
+		}
+	}
+
+	return result;
+}
+
+boolean WaterSchedule::scanEvents() {
+	if (isEventAppropriate(currentEvent)) return true;
+
+	if (!isInActiveDateRange()) return false;
+
+	now = rtc.now();
+	boolean result = false;
+	for (int i = 0; i < header.numRecords && result == false; i++) {
+		EEPROMUtils::read_bytes(memAddr + sizeof(ShcheduleHeader) + (i * sizeof(currentEvent)), (uint8_t*)&currentEvent, sizeof(currentEvent));
+		if (currentEvent.type == EventType::None) break;	// This is terminating event
+		result = isEventAppropriate(currentEvent);
+	}
+
+	return result;
+}

@@ -13,6 +13,9 @@ public:
 
 	static void save_bytes(int addr, uint8_t *raw, uint16_t size);
 	static void read_bytes(int addr, uint8_t *raw, uint16_t size);
+
+	static void saveULong(int addr, unsigned long& value);
+	static unsigned long readULong(int addr);
 };
 
 #endif /* EEPROMUTILS_H_ */
