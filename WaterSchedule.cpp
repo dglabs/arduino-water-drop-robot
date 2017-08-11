@@ -56,10 +56,11 @@ boolean WaterSchedule::isInActiveDateRange() {
 	DateTime bufDateStart(header.startDate);
 	DateTime bufDateEnd(header.stopDate);
 
+	now = rtc.now();
 	DateTime startDate(now.year(), bufDateStart.month(), bufDateStart.day(), bufDateStart.hour(), bufDateStart.minute(), bufDateStart.second());
 	DateTime endDate(now.year(), bufDateEnd.month(), bufDateEnd.day(), bufDateEnd.hour(), bufDateEnd.minute(), bufDateEnd.second());
 
-	return now.unixtime() >= startDate.unixtime() && now.unixtime() <= endDate.unixtime();
+	return  now.unixtime() >= startDate.unixtime() && now.unixtime() <= endDate.unixtime();
 }
 
 
@@ -67,6 +68,7 @@ boolean WaterSchedule::isEventAppropriate(ScheduleEvent& event) {
 	boolean result = false;
 	if (event.type == EventType::None) return false;
 
+	now = rtc.now();
 	DateTime eventTime(event.checkTime);
 	DateTime actionTime(now.year(), now.month(), now.day(), eventTime.hour(), eventTime.minute(), eventTime.second());
 
@@ -102,7 +104,6 @@ boolean WaterSchedule::scanEvents() {
 
 	if (!isInActiveDateRange()) return false;
 
-	now = rtc.now();
 	boolean result = false;
 	for (int i = 0; i < header.numRecords && result == false; i++) {
 		EEPROMUtils::read_bytes(memAddr + sizeof(ShcheduleHeader) + (i * sizeof(currentEvent)), (uint8_t*)&currentEvent, sizeof(currentEvent));

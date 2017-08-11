@@ -11,7 +11,7 @@
 
 //#define _SERIAL_DEBUG
 
-const int MIN_LEVEL_DIFF = 25;
+const int MIN_LEVEL_DIFF = 15;
 
 WaterLevelMeter::WaterLevelMeter(const uint8_t* _levelPins, const int* _initialAverageValues, const int _memAddress) :
 	levelPins(_levelPins)

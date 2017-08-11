@@ -104,10 +104,11 @@ void RobotDisplay::update(DateTime& now) {
 	    	lcd.print("s");
 
 		    lcd.setCursor(0, 1);
+		    lcd.print("VOL:");
 		    lcd.print(waterFlowMeter.getVolumeFromStart());
-		    lcd.print("l ");
+		    lcd.print("L ");
 		    lcd.print(waterFlowMeter.getVolumePerMinute());
-		    lcd.print("l/m");
+		    lcd.print("L/m");
 	    }
 	    else {
 	    	lcd.print("     ");

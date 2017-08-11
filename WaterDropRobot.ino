@@ -112,16 +112,16 @@ void setup () {
 		// rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
 	}
 
-	//if (schedule.isInActiveDateRange())
+	if (schedule.isInActiveDateRange())
 		waterOutValve.closeValve();
-	/*else {
+	else {
 		// Prepare system to winter operation
 		if (!waterOutValve.isOpen())
 			waterOutValve.openValve();
 		waterInValve.closeValve();
 		if (rainCoverHandler.isCoverOpen())
 			rainCoverHandler.closeCover();
-	}*/
+	}
 
 
 	display.initialize();

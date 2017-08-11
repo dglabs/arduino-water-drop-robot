@@ -70,7 +70,9 @@ void RobotController::setCurrentState(RobotState _state) {
 
 // Process the current schedule action if any and @return true if device should stay active
 boolean RobotController::processScheduleEvent() {
-	if (!schedule.isEventAppropriate(schedule.getCurrentEvent())) { schedule.dismissCurrentEvent(); return false; }
+	if (!schedule.isEventAppropriate(schedule.getCurrentEvent())) {
+		schedule.dismissCurrentEvent(); return false;
+	}
 	switch (schedule.getCurrentEvent().type) {
 	case EventType::WaterIn: {
 		if (waterOutValve.isOpen()) waterOutValve.closeValve();
@@ -96,8 +98,8 @@ boolean RobotController::processScheduleEvent() {
 	case EventType::WaterOut: {
 		if (waterInValve.isOpen()) waterInValve.closeValve();
 		if (!waterOutValve.isOpen()) {
-			if (waterLevelMeter.readLevel() > schedule.getCurrentEvent().minLevel &&
-					waterOutValve.valveCloseSeconds() > MIN_TIME_VAVLE_CLOSED_SECONDS) {
+			if (waterLevelMeter.readLevel() > schedule.getCurrentEvent().minLevel/* &&
+					waterOutValve.valveCloseSeconds() > MIN_TIME_VAVLE_CLOSED_SECONDS*/) {
 				waterOutValve.openValve();
 				display.setState(RobotDisplay::OutValve);
 				waterFlowMeter.startWaterOut();
