@@ -11,13 +11,13 @@
 
 const ScheduleEvent DefaultEvents[] = {
 		// Default every day event
-		ScheduleEvent(EventType::WaterOut, DateTime(2017, 06, 10, 21, 0, 0), 300 /*duration*/, 100 /*liters*/, 10 /*minTemperature*/
+		ScheduleEvent(EventType::WaterOut, DateTime(2017, 06, 10, 21, 0, 0), 600 /*duration*/, 60 /*liters*/, 10 /*minTemperature*/
 				, 0 /*minLevel*/, 100 /*maxLevel*/, EventFlags::SkipIfRecentRain)
 		// Additional event when it's very hot
-		, ScheduleEvent(EventType::WaterOut, DateTime(2017, 06, 10, 16, 0, 0), 200 /*duration*/, 50 /*liters*/, 30 /*minTemperature*/
+		, ScheduleEvent(EventType::WaterOut, DateTime(2017, 06, 10, 16, 0, 0), 300 /*duration*/, 30 /*liters*/, 30 /*minTemperature*/
 				, 0 /*minLevel*/, 100 /*maxLevel*/, EventFlags::SkipIfRecentRain)
 		// Additional backup event if it was raining
-		, ScheduleEvent(EventType::WaterOut, DateTime(2017, 06, 10, 22, 0, 0), 100 /*duration*/, 50 /*liters*/, 15 /*minTemperature*/
+		, ScheduleEvent(EventType::WaterOut, DateTime(2017, 06, 10, 22, 0, 0), 300 /*duration*/, 30 /*liters*/, 15 /*minTemperature*/
 				, 0 /*minLevel*/, 100 /*maxLevel*/, 0)
 		// Event to fill-in the tank
 		, ScheduleEvent(EventType::WaterIn, DateTime(2017, 06, 10, 13, 0, 0), 250 /*duration*/, 300 /*liters*/, 10 /*minTemperature*/
@@ -70,24 +70,26 @@ boolean WaterSchedule::isEventAppropriate(ScheduleEvent& event) {
 	DateTime eventTime(event.checkTime);
 	DateTime actionTime(now.year(), now.month(), now.day(), eventTime.hour(), eventTime.minute(), eventTime.second());
 
-	TimeSpan eventSpan = now - eventTime;
+	if (now.unixtime() >= actionTime.unixtime()) {
+		TimeSpan eventSpan = now - actionTime;
 
-	if (eventSpan.totalseconds() < event.duration) {
-		result = true;
+		if (eventSpan.totalseconds() < event.duration) {
+			result = true;
 
-		// TODO: Check min temperature and set result = false if needed
+			// TODO: Check min temperature and set result = false if needed
 
-		// Check recent rain flag
-		if (event.flags & EventFlags::SkipIfRecentRain) {
-			LastRainInfo rainInfo;
-			rainSensor.getLastRainInfo(rainInfo);
+			// Check recent rain flag
+			if (event.flags & EventFlags::SkipIfRecentRain) {
+				LastRainInfo rainInfo;
+				rainSensor.getLastRainInfo(rainInfo);
 
-			if (rainInfo.startTime > 0 && rainInfo.startTime < 0xFFFFFFFF) {
-				DateTime lastRaintTime(rainInfo.startTime);
-				TimeSpan rainSpan = now - lastRaintTime;
+				if (rainInfo.startTime > 0 && rainInfo.startTime < 0xFFFFFFFF) {
+					DateTime lastRaintTime(rainInfo.startTime);
+					TimeSpan rainSpan = now - lastRaintTime;
 
-				if (rainSpan.days() <= 1 && rainInfo.enoughRainPoured())
-					result = false;
+					if (rainSpan.days() <= 1 && rainInfo.enoughRainPoured())
+						result = false;
+				}
 			}
 		}
 	}
@@ -107,6 +109,8 @@ boolean WaterSchedule::scanEvents() {
 		if (currentEvent.type == EventType::None) break;	// This is terminating event
 		result = isEventAppropriate(currentEvent);
 	}
+
+	if (!result) currentEvent.type = EventType::None;
 
 	return result;
 }

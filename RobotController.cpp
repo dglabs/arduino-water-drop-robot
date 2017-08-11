@@ -87,6 +87,7 @@ boolean RobotController::processScheduleEvent() {
 	    	if (waterLevelMeter.readLevel() > schedule.getCurrentEvent().maxLevel ||
 	    			waterInValve.valveOpenSeconds() > schedule.getCurrentEvent().duration) {
 	    		waterInValve.closeValve();
+	    		schedule.dismissCurrentEvent();
 	    		return false;
 	    	}
 	    	return true;
@@ -111,6 +112,7 @@ boolean RobotController::processScheduleEvent() {
 				waterOutValve.closeValve();
 	    		waterOutValve.closeValve();
 	    		waterFlowMeter.stopWaterOut();
+	    		schedule.dismissCurrentEvent();
 	    		return false;
 			}
 			else return true;	// Continue water pouring
@@ -189,7 +191,7 @@ void RobotController::loop() {
 	    			schedule.getCurrentEvent().type = EventType::WaterOut;
 	    			schedule.getCurrentEvent().checkTime = now.unixtime();
 	    			schedule.getCurrentEvent().duration = MAX_OUT_VALVE_OPEN_TIME_SECONDS;
-	    			schedule.getCurrentEvent().liters = 300;
+	    			schedule.getCurrentEvent().liters = 100;
 	    			schedule.getCurrentEvent().minLevel = 0;
 	    			schedule.getCurrentEvent().maxLevel = 100;
 	    			schedule.getCurrentEvent().flags = 0;
@@ -259,9 +261,9 @@ boolean RobotController::checkRainOut() {
     	rainCoverHandler.openCover();
     }
 
-    if ((rainCoverHandler.isCoverOpen() && !rainCoverHandler.isManualOpen()) &&
-    		(waterLevelMeter.readLevel() >= 80 || rainSensor.getIntensity() <= RainIntensity::mist) ||
-			!schedule.isInActiveDateRange()) {
+    if (((rainCoverHandler.isCoverOpen() && !rainCoverHandler.isManualOpen()) &&
+    		(waterLevelMeter.readLevel() >= 80 || rainSensor.getIntensity() <= RainIntensity::mist)) /*||
+			!schedule.isInActiveDateRange()*/) {
     	result = true;
     	display.setState(RobotDisplay::RainControl);
     	display.update(now);

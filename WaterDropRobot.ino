@@ -60,8 +60,6 @@ KeyboardWithISR keyboard(PIN_KEYS);
 // Water flow volume meter
 WaterFlowMeter waterFlowMeter(WTR_VOLUME_ADDR);
 
-// Scheduler
-WaterSchedule schedule(SCHEDULE_EEPROM_ADDR, rtc, rainSensor);
 
 // Rain handling
 RainSensor rainSensor(A7, RAIN_SENSOR_ADDR, rtc);
@@ -69,6 +67,9 @@ const uint8_t COVER_MOTOR_POWER_PIN = 8;
 const uint8_t COVER_MOTOR_DIRECTION_PIN = 7;
 const uint8_t TILT_SENSOR_PIN = 6;
 RainCoverHandler rainCoverHandler(COVER_MOTOR_POWER_PIN, COVER_MOTOR_DIRECTION_PIN, TILT_SENSOR_PIN, COVER_STATE_ADDR);
+
+// Scheduler
+WaterSchedule schedule(SCHEDULE_EEPROM_ADDR, rtc, rainSensor);
 
 
 // Display class
@@ -111,16 +112,16 @@ void setup () {
 		// rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
 	}
 
-	if (schedule.isInActiveDateRange())
+	//if (schedule.isInActiveDateRange())
 		waterOutValve.closeValve();
-	else {
+	/*else {
 		// Prepare system to winter operation
 		if (!waterOutValve.isOpen())
 			waterOutValve.openValve();
 		waterInValve.closeValve();
 		if (rainCoverHandler.isCoverOpen())
 			rainCoverHandler.closeCover();
-	}
+	}*/
 
 
 	display.initialize();

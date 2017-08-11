@@ -27,7 +27,7 @@ struct ScheduleEvent {
 	uint8_t maxLevel; 	// Max allowed water level
 	uint8_t flags;	// Bit flags
 
-	ScheduleEvent() {}
+	ScheduleEvent() :type(EventType::None) {}
 
 	ScheduleEvent(EventType _type, DateTime _checkTime, int _duration, int _liters
 			, uint8_t _minTemperature, uint8_t _minLevel
