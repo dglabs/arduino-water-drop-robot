@@ -23,7 +23,7 @@ protected:
 			if (isOpen()) return true;
 		} break;
 		case VALVE_CLOSED: {
-			if (!isOpen()) return true;
+			if (isClosed()) return true;
 		} break;
 		}
 		return false;
@@ -32,7 +32,9 @@ public:
 	Valve() : openValveChrono(Chrono::SECONDS), closeValveChrono(Chrono::SECONDS) { closeValveChrono.restart();  };
 	virtual ~Valve() {};
 
-	virtual boolean setValvePosition(Position position) {
+	virtual void setup() {};
+
+	boolean setValvePosition(Position position) {
 		switch (position) {
 		case VALVE_OPEN: {
 			openValveChrono.restart();
@@ -47,9 +49,10 @@ public:
 		}
 		return true;
 	}
-	boolean openValve() { return setValvePosition(Position::VALVE_OPEN); }
-	boolean closeValve() { return setValvePosition(Position::VALVE_CLOSED); }
+	virtual boolean openValve() = 0;
+	virtual boolean closeValve() = 0;
 	virtual boolean isOpen() = 0;
+	virtual boolean isClosed() = 0;
 
 	int valveOpenSeconds() const { return openValveChrono.elapsed(); }
 	int valveCloseSeconds() const { return closeValveChrono.elapsed(); }

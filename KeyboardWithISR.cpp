@@ -7,122 +7,135 @@
 
 #include "KeyboardWithISR.h"
 
-const long KEY_PRESS_MILLIS = 50l;
-const long KEY_LONG_PRESS_MILLIS = 800l;
+KeyboardWithISR* instance = NULL;
 
-KeyboardWithISR *instance;
+void clk_ISR();
 
-void key1_ISR() {
-	if (digitalRead(instance->keyPins[0]) == LOW) {
-		 if (!instance->key0_Chrono.isRunning()) {
-			 instance->pressed[0] = true;	// temporary consider key pressed
-			 instance->key0_Chrono.restart();
-		 }
-	}
-	else {
-		if (instance->key0_Chrono.isRunning()) {
-			// If long pressed interval satisfied, then set long press for key
-			if (instance->key0_Chrono.hasPassed(KEY_LONG_PRESS_MILLIS)) {
-				instance->pressed[0] = false;
-				instance->longPressed[0] = true;
-			}
-			// Else consider short press if time passed
-			else if (instance->key0_Chrono.hasPassed(KEY_PRESS_MILLIS)) {
-				instance->pressed[0] = true;
-				instance->longPressed[0] = false;
-			}
-			else {	// veryshort press. Ignoring
-				instance->pressed[0] = false;
-				instance->longPressed[0] = false;
-			}
-		}
-		else {	// Id chrono is not running, then consider artifact and ignore
-			instance->pressed[0] = instance->longPressed[0] = false;
-		}
-		// Stop key chrono
-		instance->key0_Chrono.restart();
-		instance->key0_Chrono.stop();
-	}
-}
-
-void refreshKey(int inputPinIndex) {
-	if (digitalRead(instance->keyPins[inputPinIndex]) == LOW) {
-		 if (!instance->key1_Chrono.isRunning()) {
-			 instance->pressed[inputPinIndex] = true;	// temporary consider key pressed
-			 instance->key1_Chrono.restart();
-		 }
-	}
-	else {
-		if (instance->key1_Chrono.isRunning()) {
-			// If long pressed interval satisfied, then set long press for key
-			if (instance->key1_Chrono.hasPassed(KEY_LONG_PRESS_MILLIS)) {
-				instance->pressed[inputPinIndex] = false;
-				instance->longPressed[inputPinIndex] = true;
-			}
-			// Else consider short press if time passed
-			else if (instance->key1_Chrono.hasPassed(KEY_PRESS_MILLIS)) {
-				instance->pressed[inputPinIndex] = true;
-				instance->longPressed[inputPinIndex] = false;
-			}
-			else {	// veryshort press. Ignoring
-				instance->pressed[inputPinIndex] = false;
-				instance->longPressed[inputPinIndex] = false;
-			}
-		}
-		else {	// Id chrono is not running, then consider artifact and ignore
-			instance->pressed[inputPinIndex] = instance->longPressed[1] = false;
-		}
-		// Stop key chrono
-		instance->key1_Chrono.restart();
-		instance->key1_Chrono.stop();
-	}
-}
-
-KeyboardWithISR::KeyboardWithISR(const uint8_t* _keyPins) :
-		key0_Chrono(Chrono::MILLIS),
-		key1_Chrono(Chrono::MILLIS),
-		keyPins(_keyPins)
+KeyboardWithISR::KeyboardWithISR(uint8_t _pinCLK, uint8_t _pinDT, uint8_t _pinSW, uint8_t _maxPos) :
+		pinCLK(_pinCLK)
+		, pinDT(_pinDT)
+		, pinSW(_pinSW)
+		, maxPos(_maxPos)
+		, curPos(0)
+		, pressed(false)
+		, rotated(false)
+		, rotating(true)
+		, pressChrono(Chrono::MILLIS)
+		, pressedChrono(Chrono::MILLIS)
+		, rotatedChrono(Chrono::MILLIS)
 {
-	for (int i = 0; i < KEYS_COUNT; i++)
-		pinMode(keyPins[i], INPUT_PULLUP);
-
 	instance = this;
-	attachInterrupt(digitalPinToInterrupt(keyPins[0]), key1_ISR, CHANGE);
+
+	pinMode(pinCLK, INPUT);
+	digitalWrite(pinCLK, HIGH);      // turn on pull-up resistor
+	pinMode(pinDT, INPUT);
+	digitalWrite(pinDT, HIGH);       // turn on pull-up resistor
+	pinMode(pinSW, INPUT);
+	digitalWrite(pinSW, HIGH);       // turn on pull-up resistor
+	pressChrono.stop();
+	rotatedChrono.restart();
+	pressedChrono.restart();
+
+	attachInterrupt(digitalPinToInterrupt(pinCLK), clk_ISR, CHANGE);
 }
 
-void KeyboardWithISR::clear() {
-	key0_Chrono.restart(); key0_Chrono.stop();
-	key1_Chrono.restart(); key1_Chrono.stop();
-	for (int i = 0; i < KEYS_COUNT; i++) {
-		pressed[i] = false;
-		longPressed[i] = false;
+void KeyboardWithISR::checkPressed() {
+	boolean p = digitalRead(instance->pinSW) == LOW;
+	if (p) {
+		if (!pressed && pressedChrono.elapsed() > 200) {
+			if (pressChrono.isRunning()) {
+				if (pressChrono.elapsed() > 100) {
+					pressed = true;
+					pressChrono.stop();
+					pressedChrono.restart();
+				}
+			}
+			else { pressChrono.restart(); }
+		}
+		else pressChrono.stop();
+	}
+	else {
+		pressChrono.stop();
 	}
 }
 
-void KeyboardWithISR::refresh() {
-	refreshKey(1);
-}
+void clk_ISR() {
+	if (!instance->rotated && instance->rotatedChrono.elapsed() > 50) {
+		if (instance->rotating) delay(1);	// debounce
 
+		int increment = 0;
+		if (digitalRead(instance->pinCLK) == HIGH) {   // found a low-to-high on channel A
+			if (digitalRead(instance->pinDT) == LOW) {  // check channel B to see which way
+			  // encoder is turning
+			  increment = 1;         // CCW
+			}
+			else {
+			  increment = -1;         // CW
+			}
+		}
+		else                                        // found a high-to-low on channel A
+		{
+			if (digitalRead(instance->pinDT) == LOW) {   // check channel B to see which way
+			  // encoder is turning
+			  increment = -1;          // CW
+			}
+			else {
+			  increment = 1;          // CCW
+			}
+		}
+		instance->curPos += increment;
+		instance->curPos = instance->curPos < 0 ? instance->maxPos - 1 : instance->curPos % instance->maxPos;
+
+		instance->rotating = false;
+		instance->rotated = true;
+		instance->rotatedChrono.restart();
+	}
+
+
+	/*boolean curCLK = digitalRead(instance->pinCLK);
+	boolean curDT = digitalRead(instance->pinDT);
+	if (instance->prevCLK != instance->prevDT) {
+		int increment = 0;
+		if (!instance->prevCLK && curCLK) {
+			increment = curDT ? 1 : -1;
+		}
+		else if (instance->prevCLK && !curCLK) {
+			increment = curDT ? -1 : 1;
+		}
+	}
+	instance->prevCLK = curCLK;
+	instance->prevDT = curDT;*/
+
+
+
+	/*if (!instance->rotated && instance->rotatedChrono.elapsed() > 100) {
+		if (instance->rotating) delay(1);	// debounce
+
+		if (digitalRead(instance->pinCLK) != digitalRead(instance->pinDT)) {
+			if (digitalRead(instance->pinCLK) == HIGH)
+			{
+				instance->curPos++;
+				instance->curPos %= instance->maxPos;
+			}
+			else  {
+				instance->curPos = instance->curPos == 0 ? instance->maxPos - 1 : instance->curPos - 1;
+			}
+		}
+
+		instance->rotating = false;
+		instance->rotated = true;
+		instance->rotatedChrono.restart();
+	}*/
+	instance->checkPressed();
+}
 
 KeyboardWithISR::~KeyboardWithISR() {
-	detachInterrupt(digitalPinToInterrupt(keyPins[0]));
-	if (KEYS_COUNT > 1)
-		detachInterrupt(digitalPinToInterrupt(keyPins[1]));
+	detachInterrupt(digitalPinToInterrupt(pinSW));
+	instance = NULL;
 }
 
-boolean KeyboardWithISR::isPressed(uint8_t index) {
-	boolean result = pressed[index];
-	pressed[index] = false;
-	return result;
+void KeyboardWithISR::tick() {
+	rotating = true;
+	checkPressed();
 }
-
-
-boolean KeyboardWithISR::isLongPressed(uint8_t index) {
-	boolean result = longPressed[index];
-	longPressed[index] = false;
-	return result;
-
-}
-
-
 

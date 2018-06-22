@@ -13,6 +13,7 @@
 #include <RTClib.h>
 #include <Chrono.h>
 
+#include "AbstractController.h"
 #include "WaterMotorizedValve.h"
 #include "WaterInValve.h"
 #include "WaterLevelMeter.h"
@@ -22,40 +23,30 @@
 #include "RainSensor.h"
 #include "RainCoverHandler.h"
 #include "WaterSchedule.h"
+#include "BatteryMonitor.h"
+#include "DS3232RTC.h"
 
 const long ACTIVE_STATE_TIME_SECONDS = 60;
-const long POWER_SAVE_SYCLES = 4;
+const int POWER_SAVE_SYCLES = 2;
 
-class RobotController {
+class RobotController: public AbstractController {
 public:
 	enum RobotState { Active, PowerSave };
 
 protected:
-
-	RobotState currentState;
 	Chrono activeStateChrono;
 	int powerSaveCyclesCount;
-	DateTime now;
-
-	const uint8_t mainPowerPin;
-	RTC_DS1307& rtc;
-	KeyboardWithISR& keyboard;
-	WaterLevelMeter& waterLevelMeter;
-	WaterMotorizedValve& waterOutValve;
-	WaterInValve& waterInValve;
-	RobotDisplay& display;
-	WaterFlowMeter& waterFlowMeter;
-	RainSensor& rainSensor;
-	RainCoverHandler& rainCoverHandler;
-	WaterSchedule& schedule;
+	int temperature;
+	RobotState currentState;
 
 	void setCurrentState(RobotState _state);
 	boolean checkRainOut();
 	boolean processScheduleEvent();
+	void prepareWinterOperation();
 
 public:
 	RobotController(const uint8_t _mainPowerPin
-			, RTC_DS1307& _rtc
+			, RTC_DS3231& _rtc
 			, KeyboardWithISR& _keyboard
 			, WaterLevelMeter& _waterLevelMeter
 			, WaterMotorizedValve& _waterOutValve
@@ -64,10 +55,14 @@ public:
 			, WaterFlowMeter& _waterFlowMeter
 			, RainSensor& _rainSensor
 			, RainCoverHandler& _rainCoverHandler
-			, WaterSchedule& _schedule);
+			, WaterSchedule& _schedule
+			, BatteryMonitor& _batteryMonitor
+			, DS3232RTC& rtsDS3232);
 	virtual ~RobotController();
 
-	void loop();
+	virtual void setup();
+
+	virtual void loop();
 
 	boolean checkSchedule();
 };

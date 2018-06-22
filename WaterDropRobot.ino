@@ -8,69 +8,78 @@
 #include "KeyboardWithISR.h"
 #include "RobotDisplay.h"
 #include "WaterFlowMeter.h"
+#include "AbstractController.h"
 #include "RobotController.h"
+#include "TestController.h"
 #include "RainSensor.h"
 #include "RainCoverHandler.h"
 #include "WaterSchedule.h"
+#include "BatteryMonitor.h"
+#include "DS3232RTC.h"
 
 // Date and time functions using a DS1307 RTC connected via I2C and Wire lib
-#include <Wire.h>
 #include <RTClib.h>
 
-// RTC and Display
-RTC_DS1307 rtc;
-LiquidCrystal_I2C lcd(0x3F,16,2);
+//#define TEST_MODE
 
-// RTC addresses
+// RTC and Display
+RTC_DS3231 rtc;
+DS3232RTC rtcDS3232(false);
+
+LiquidCrystal_I2C lcd(0x3F,LCD_COLS,LCD_ROWS);
+
+// EPROM addresses
 const int WTR_OUT_ADDR = 0;
 const int WTR_LEVEL_ADDR = WTR_OUT_ADDR + STORAGE_SIZE_WATER_VALVE;
 const int WTR_VOLUME_ADDR = WTR_LEVEL_ADDR + STORAGE_SIZE_WATER_LEVEL;
 const int COVER_STATE_ADDR = WTR_VOLUME_ADDR + STORAGE_SIZE_WATER_VOLUME;
 const int RAIN_SENSOR_ADDR = COVER_STATE_ADDR + STORAGE_SIZE_COVER_HANDLER;
 
-// EPROM addresses
 const int SCHEDULE_EEPROM_ADDR = RAIN_SENSOR_ADDR + STORAGE_SIZE_RAIN_SENSOR;
+
+const int LOG_EEPROM_ADDR = SCHEDULE_EEPROM_ADDR + STORAGE_SIZE_SCHEDULE;
 
 // Main power pin
 const uint8_t MAIN_POWER = 13;
 
-// Water in controls
-const uint8_t WTR_IN_RELAY = 12;
-
 // Water out motorized valve
-const uint8_t WTR_OUT_ON__OFF_RELAY = 10;
-const uint8_t WTR_OUT_POWER_RELAY = 11;
-const uint8_t WTR_OUT_SIGNAL_IN = 4;
-WaterMotorizedValve waterOutValve(WTR_OUT_ADDR, WTR_OUT_ON__OFF_RELAY, WTR_OUT_POWER_RELAY, WTR_OUT_SIGNAL_IN);
+const uint8_t WTR_OUT_OPEN = 5;
+const uint8_t WTR_OUT_CLOSE = 6;
+const uint8_t WTR_OUT_SIGNAL_OPEN = 4;
+const uint8_t WTR_OUT_SIGNAL_CLOSED = 11;
+WaterMotorizedValve waterOutValve(WTR_OUT_ADDR, WTR_OUT_OPEN, WTR_OUT_CLOSE/*, WTR_OUT_SIGNAL_OPEN, WTR_OUT_SIGNAL_CLOSED*/);
 
+// Water in controls
 // Water in solenoid valve
-const uint8_t WRT_IN_RELAY = 12;
-WaterInValve waterInValve(WRT_IN_RELAY);
+const uint8_t WTR_IN_RELAY = 12;
+WaterInValve waterInValve(WTR_IN_RELAY);
 
 // Water level meter
-const uint8_t WATER_LEVEL_INPUTS[] = { A0, A1, A2, A3 };
-const int WATER_LEVEL_AVERAGES[] = { 538, 538, 538, 540 };
-WaterLevelMeter waterLevelMeter(WATER_LEVEL_INPUTS, WATER_LEVEL_AVERAGES, WTR_LEVEL_ADDR);
-
+const uint8_t WATER_LEVEL_INPUTS[] = { A2, A3 };
+WaterLevelMeter waterLevelMeter(WATER_LEVEL_INPUTS/*, WATER_LEVEL_AVERAGES, WTR_LEVEL_ADDR*/);
 
 // Keyboard controls
-const uint8_t PIN_KEYS[] = { 2, 5 };
-KeyboardWithISR keyboard(PIN_KEYS);
+const uint8_t ENCODER_CLK = 2;
+const uint8_t ENCODER_DT  = 8;
+const uint8_t ENCODER_SW  = 7;
+KeyboardWithISR keyboard(ENCODER_CLK, ENCODER_DT, ENCODER_SW, RobotDisplay::State::ITEM_COUNT);
 
 // Water flow volume meter
-WaterFlowMeter waterFlowMeter(WTR_VOLUME_ADDR);
-
+WaterFlowMeter waterFlowMeter(WTR_VOLUME_ADDR, rtc);
 
 // Rain handling
 RainSensor rainSensor(A7, RAIN_SENSOR_ADDR, rtc);
-const uint8_t COVER_MOTOR_POWER_PIN = 8;
-const uint8_t COVER_MOTOR_DIRECTION_PIN = 7;
-const uint8_t TILT_SENSOR_PIN = 6;
+const uint8_t COVER_MOTOR_DIRECTION_PIN = 9;
+const uint8_t COVER_MOTOR_POWER_PIN = 10;
+const uint8_t TILT_SENSOR_PIN = 15;	// A1 pin in digital mode
 RainCoverHandler rainCoverHandler(COVER_MOTOR_POWER_PIN, COVER_MOTOR_DIRECTION_PIN, TILT_SENSOR_PIN, COVER_STATE_ADDR);
+
+// Battery monitor
+const uint8_t BATTERY_POWER_SENSOR_PIN = A0;
+BatteryMonitor batteryMonitor(BATTERY_POWER_SENSOR_PIN);
 
 // Scheduler
 WaterSchedule schedule(SCHEDULE_EEPROM_ADDR, rtc, rainSensor);
-
 
 // Display class
 RobotDisplay display(lcd
@@ -80,8 +89,12 @@ RobotDisplay display(lcd
 		, waterInValve
 		, waterFlowMeter
 		, rainSensor
-		, rainCoverHandler);
-RobotController controller(MAIN_POWER
+		, rainCoverHandler
+		, batteryMonitor
+		, rtcDS3232);
+
+#ifdef TEST_MODE
+TestController controller = TestController(MAIN_POWER
 		, rtc
 		, keyboard
 		, waterLevelMeter
@@ -91,44 +104,43 @@ RobotController controller(MAIN_POWER
 		, waterFlowMeter
 		, rainSensor
 		, rainCoverHandler
-		, schedule);
+		, schedule
+		, batteryMonitor
+		, rtcDS3232);
+#else
+RobotController controller = RobotController(MAIN_POWER
+		, rtc
+		, keyboard
+		, waterLevelMeter
+		, waterOutValve
+		, waterInValve
+		, display
+		, waterFlowMeter
+		, rainSensor
+		, rainCoverHandler
+		, schedule
+		, batteryMonitor
+		, rtcDS3232);
+#endif /*TEST_MODE*/
 
 void setup () {
-	while (!Serial); // for Leonardo/Micro/Zero
+	//while (!Serial); // for Leonardo/Micro/Zero
 	Serial.begin(57600);
-	
-	delay(5000);
-	if (! rtc.begin()) {
-	Serial.println("Couldn't find RTC");
-		while (1);
-	}
 
-	if (! rtc.isrunning()) {
-	Serial.println("RTC is NOT running!");
-		// following line sets the RTC to the date & time this sketch was compiled
-		rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-		// This line sets the RTC with an explicit date & time, for example to set
-		// January 21, 2014 at 3am you would call:
-		// rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
-	}
-
-	if (schedule.isInActiveDateRange())
-		waterOutValve.closeValve();
-	else {
-		// Prepare system to winter operation
-		if (!waterOutValve.isOpen())
-			waterOutValve.openValve();
-		waterInValve.closeValve();
-		if (rainCoverHandler.isCoverOpen())
-			rainCoverHandler.closeCover();
-	}
-
-
-	display.initialize();
-	lcd.print("Test");
+	controller.setup();
 }
 
 void loop () {
 	controller.loop();
 	//delay(1000);
+	
+	/*keyboard.tick();
+	if (keyboard.isRotated()) Serial.println("Rotated");
+	if (keyboard.isPressed()) Serial.println("Pressed");*/
+
+	/*digitalWrite(MAIN_POWER, HIGH);	// Turn off all peripherals
+	delay(1000);
+	digitalWrite(MAIN_POWER, LOW);	// Turn off all peripherals
+	delay(1000);*/
+	
 }

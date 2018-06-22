@@ -13,24 +13,30 @@
 
 const int MIN_LEVEL_DIFF = 15;
 
-WaterLevelMeter::WaterLevelMeter(const uint8_t* _levelPins, const int* _initialAverageValues, const int _memAddress) :
+const int BOTTOM_SENSOR = 1;
+const int TOP_SENSOR = 0;
+
+WaterLevelMeter::WaterLevelMeter(const uint8_t* _levelPins/*, const int* _initialAverageValues, const int _memAddress*/) :
 	levelPins(_levelPins)
-	, memAddress(_memAddress)
-	, initialAverageValues(_initialAverageValues)
+	/*, memAddress(_memAddress)
+	, initialAverageValues(_initialAverageValues)*/
 {
 	// Pull-up all analog pins to detect disconnected wires
-	for (int i = 0; i < LEVEL_SENSOR_COUNT; i++)
-		pinMode(levelPins[i], INPUT_PULLUP);
-
-	// Initialize last saved current value
-	currentLevel = EEPROM.read(memAddress);
-	if (currentLevel < MIN_WATER_LEVEL || currentLevel > MAX_WATER_LEVEL) {
-		currentLevel = MAX_WATER_LEVEL;
-		//rtc.writenvram(sramAddress, currentLevel);
+	for (int i = 0; i < LEVEL_SENSOR_COUNT; i++) {
+		//pinMode(levelPins[i], INPUT_PULLUP);
+		pinMode(levelPins[i], INPUT);           // input pin with pull-up resistor
+		digitalWrite(levelPins[i], HIGH);
 	}
 
+	// Initialize last saved current value
+	/*currentLevel = EEPROM.read(memAddress);
+	if (currentLevel < MIN_WATER_LEVEL || currentLevel > MAX_WATER_LEVEL) {
+		currentLevel = MAX_WATER_LEVEL;*/
+		//rtc.writenvram(sramAddress, currentLevel);
+	//}
+
 	// Read average values from EEPROM
-	read_averages(memAddress + sizeof(currentLevel));
+	/*read_averages(memAddress + sizeof(currentLevel));
 	boolean invalidAverages = false;
 	for (int i = 0; i < LEVEL_SENSOR_COUNT && !invalidAverages; i++)
 		if (abs(averageValues[i] - initialAverageValues[i]) > 30) invalidAverages = true;
@@ -40,12 +46,12 @@ WaterLevelMeter::WaterLevelMeter(const uint8_t* _levelPins, const int* _initialA
 		for (int i = 0; i < LEVEL_SENSOR_COUNT; i++)
 			averageValues[i] = initialAverageValues[i];
 		save_averages(memAddress + sizeof(currentLevel));
-	}
+	}*/
 
 	// Initialize averages calculation in this new cycle
-	scanCount = 1;
+	/*scanCount = 1;
 	for (int i = 0; i < LEVEL_SENSOR_COUNT; i++)
-		sumValues[i] = averageValues[i];
+		sumValues[i] = averageValues[i];*/
 
 }
 
@@ -54,7 +60,7 @@ WaterLevelMeter::~WaterLevelMeter() {
 }
 
 
-void WaterLevelMeter::sortAbsDiffs(uint8_t* sortedIndexes, int* sortedDiffs) {
+/*void WaterLevelMeter::sortAbsDiffs(uint8_t* sortedIndexes, int* sortedDiffs) {
 	int buf[LEVEL_SENSOR_COUNT];
 	for (uint8_t i = 0; i < LEVEL_SENSOR_COUNT; i++) buf[i] = sortedDiffs[i];
 	
@@ -80,10 +86,18 @@ uint8_t WaterLevelMeter::sensorDiffToLevel(int diff, uint8_t index) {
 	else
 		level = (uint8_t)(((float)((index + 1) * 2)/(float)((LEVEL_SENSOR_COUNT + 1) * 2))*100.0);
 	return level;
-}
+}*/
 
 uint8_t WaterLevelMeter::readLevel() {
-	uint8_t level = 0;
+	if (digitalRead(levelPins[BOTTOM_SENSOR]) == HIGH && digitalRead(levelPins[TOP_SENSOR]) == HIGH)	// Bottom sensor is disconnected(no water in tank)
+		return 0;
+	else if (digitalRead(levelPins[BOTTOM_SENSOR]) == LOW && digitalRead(levelPins[TOP_SENSOR]) == HIGH)	// Bottom sensor is up. Top sensor is off (level is between)
+		return 50;
+	else if (digitalRead(levelPins[BOTTOM_SENSOR]) == LOW && digitalRead(levelPins[TOP_SENSOR]) == LOW)	// Both sensors are up - full tank.
+		return 100;
+	else return 100; // Prevent water in if levels have undefined values
+}
+/*	uint8_t level = 0;
 	uint8_t sortedIndexes[LEVEL_SENSOR_COUNT];
 	int diffs[LEVEL_SENSOR_COUNT];
 	
@@ -158,9 +172,9 @@ uint8_t WaterLevelMeter::readLevel() {
 	}
 
 	return currentLevel;
-}
+}*/
 
-void WaterLevelMeter::forceCurrentValuesAsAverages() {
+/*void WaterLevelMeter::forceCurrentValuesAsAverages() {
 	for (int i = 0; i < LEVEL_SENSOR_COUNT; i++)
 		averageValues[i] = currentValues[i];
 	save_averages(memAddress + sizeof(currentLevel));
@@ -173,6 +187,6 @@ void WaterLevelMeter::save_averages(int addr) {
 
 void WaterLevelMeter::read_averages(int addr) {
 	EEPROMUtils::read_bytes(addr, (uint8_t *)&averageValues, sizeof(averageValues));
-}
+}*/
 
 

@@ -11,31 +11,36 @@
 #include <Arduino.h>
 #include <Chrono.h>
 
-const int KEYS_COUNT = 2;
-
-class KeyboardWithISR {
+class KeyboardWithISR  {
 public:
-	const uint8_t* keyPins;
+	uint8_t pinSW;
+	uint8_t pinCLK;
+	uint8_t pinDT;
 
-	volatile boolean pressed[KEYS_COUNT];
-	volatile boolean longPressed[KEYS_COUNT];
+	uint8_t maxPos;
+	int curPos;
+	boolean pressed;
+	boolean rotated;
+	boolean rotating;
 
-	Chrono keyChronos[KEYS_COUNT];
+	Chrono pressChrono;
+	Chrono pressedChrono;
+	Chrono rotatedChrono;
 
-	Chrono key0_Chrono;
-	Chrono key1_Chrono;
+	void checkPressed();
 
 public:
-	enum KEYS { KEY0, KEY1 };
-
-	KeyboardWithISR(const uint8_t* keyPins);
+	KeyboardWithISR(uint8_t _pinCLK, uint8_t _pinDT, uint8_t _pinSW, uint8_t _maxPos);
 	virtual ~KeyboardWithISR();
 
-	boolean isPressed(uint8_t index);
-	boolean isLongPressed(uint8_t index);
-	void refresh();	// Scan keyboard
+	void setMaxPos(int _maxPos) { maxPos = _maxPos; curPos = 0; }
+	uint8_t getMaxPos() { return maxPos; }
 
-	void clear();
+	boolean isPressed() { int p = pressed; pressed = false; return p; }
+	boolean isRotated() { int r = rotated; rotated = false; return r; }
+	int getPos() { return curPos; }
+
+	void tick();
 };
 
 #endif /* KEYBOARDWITHISR_H_ */

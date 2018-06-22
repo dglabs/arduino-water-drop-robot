@@ -6,66 +6,119 @@
  */
 
 #include "WaterMotorizedValve.h"
-#include <EEPROM.h>
+#include "EEPROMUtils.h"
+
+const int MOTOR_POWER_OFF = 0;
+const int MOTOR_POWER_LOW = 100;
+const int MOTOR_POWER_FULL = 160;
+
+const int DIRECTION_OPEN = LOW;
+const int DIRECTION_CLOSE = HIGH;
 
 const uint8_t MASK_OPEN = 0xAA;
 const uint8_t MASK_CLOSED = 0x55;
 
-WaterMotorizedValve::WaterMotorizedValve(const int _memAddress, const uint8_t _waterPolarPin, const uint8_t _waterPowerPin, const uint8_t _signalPin /*= -1*/) :
+WaterMotorizedValve::WaterMotorizedValve(const int _memAddress, const uint8_t _motorOpenPin, const uint8_t _motorClosePin
+		, const uint8_t _signalPinOpen /*= 0*/, const uint8_t _signalPinClosed /*= 0*/) :
 	Valve()
 	, memAddress(_memAddress)
-	, waterPolarPin(_waterPolarPin)
-	, waterPowerPin(_waterPowerPin)
-	, signalPin( _signalPin)
+	, motorOpenPin(_motorOpenPin)
+	, motorClosePin(_motorClosePin)
+	, signalPinOpen( _signalPinOpen)
+	, signalPinClosed( _signalPinClosed)
 	, valveTransitChrono(Chrono::MILLIS)
+	, currentState(MASK_OPEN)
 {
-	pinMode(waterPolarPin, OUTPUT); digitalWrite(waterPolarPin, HIGH);
-	pinMode(waterPowerPin, OUTPUT); digitalWrite(waterPowerPin, HIGH);
-	if (signalPin > 0)
-		pinMode(signalPin, INPUT_PULLUP);
+	pinMode(motorOpenPin, OUTPUT); analogWrite(motorOpenPin, 0);
+	pinMode(motorClosePin, OUTPUT); analogWrite(motorClosePin, 0);
+	if (signalPinOpen > 0)
+		pinMode(signalPinOpen, INPUT_PULLUP);
+	if (signalPinClosed > 0)
+		pinMode(signalPinClosed, INPUT_PULLUP);
+}
 
-	currentState = EEPROM.read(memAddress);
+void WaterMotorizedValve::setup() {
+	currentState = EEPROMUtils::read(memAddress);
+	//Serial.print("Current state: "); Serial.println(currentState, HEX);
+
 	switch (currentState) {
 	case MASK_OPEN: case MASK_CLOSED: break;
 	default:
 		currentState = MASK_OPEN;
-		EEPROM.write(memAddress, currentState);
+		EEPROMUtils::save(memAddress, currentState);
 		break;
 	}
 }
+
 
 WaterMotorizedValve::~WaterMotorizedValve() {}
 
-boolean WaterMotorizedValve::setValvePosition(Position position) {
-	if (isSamePosition(position) && Position::VALVE_CLOSED == position) return false;
+void WaterMotorizedValve::processValve(Position position, int signalPin) {
+	int activePin = 0;
 
-	digitalWrite(waterPolarPin, Position::VALVE_OPEN == position ? HIGH : LOW);
+	switch (position) {
+	case Position::VALVE_OPEN:
+		activePin = motorOpenPin;
+		analogWrite(motorClosePin, 0);
+		break;
+	case Position::VALVE_CLOSED:
+		activePin = motorClosePin;
+		analogWrite(motorOpenPin, 0);
+		break;
+	}
+	analogWrite(activePin, MOTOR_POWER_FULL);
+
 	valveTransitChrono.restart(0);
-	digitalWrite(waterPowerPin, LOW);
 	int initialSignalPin = (signalPin > 0) ?  digitalRead(signalPin) : HIGH;
-	boolean signalPinChanged = false;
+	//boolean signalPinChanged = false;
 	do {
-		delay(500);
+		delay(250);
+
 		if (signalPin > 0) {
-			if (initialSignalPin != digitalRead(signalPin)) signalPinChanged = true;
+			//if (initialSignalPin != digitalRead(signalPin)) signalPinChanged = true;
 			if (valveTransitChrono.elapsed() > VALVE_TRANSIT_TIMEOUT_MILLIS_MIN /*&& signalPinChanged*/ && digitalRead(signalPin) == LOW) break;
 		}
 	} while (valveTransitChrono.elapsed() < VALVE_TRANSIT_TIMEOUT_MILLIS_MAX);
-	digitalWrite(waterPowerPin, HIGH);
-	digitalWrite(waterPolarPin, HIGH);
-	switch (position) {
-	case VALVE_OPEN:
-		currentState = MASK_OPEN;
-		break;
-	case VALVE_CLOSED:
-		currentState = MASK_CLOSED;
-		break;
-	}
-	EEPROM.write(memAddress, currentState);
-
-	return Valve::setValvePosition(position);
+	analogWrite(motorOpenPin, 0);
+	analogWrite(motorClosePin, 0);
 }
 
-boolean WaterMotorizedValve::isOpen() { return currentState != MASK_CLOSED; }
+boolean WaterMotorizedValve::openValve() {
+	if (isOpen()) return false;
 
+	processValve(Position::VALVE_OPEN, signalPinOpen);
+
+	currentState = MASK_OPEN;
+	EEPROMUtils::save(memAddress, currentState);
+	setValvePosition(Position::VALVE_OPEN);
+	return true;
+}
+
+boolean WaterMotorizedValve::closeValve() {
+	if (isClosed()) return false;
+
+	processValve(Position::VALVE_CLOSED, signalPinClosed);
+
+	currentState = MASK_CLOSED;
+	EEPROMUtils::save(memAddress, currentState);
+	setValvePosition(Position::VALVE_CLOSED);
+	return true;
+}
+
+boolean WaterMotorizedValve::isOpen() {
+	if (signalPinOpen > 0)
+		if ((digitalRead(signalPinOpen) ^ digitalRead(signalPinClosed)))
+			return digitalRead(signalPinOpen) == LOW;
+		else return true;	// This is undefined state and treat it as open
+	else return currentState != MASK_CLOSED;
+}
+
+boolean WaterMotorizedValve::isClosed() {
+	if (signalPinClosed > 0) {
+		if ((digitalRead(signalPinOpen) ^ digitalRead(signalPinClosed)))
+			return digitalRead(signalPinClosed) == LOW;
+		else return false;	// This is undefined state and treat it as open
+	}
+	else return currentState != MASK_OPEN;
+}
 

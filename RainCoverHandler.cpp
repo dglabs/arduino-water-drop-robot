@@ -6,21 +6,21 @@
  */
 
 #include "RainCoverHandler.h"
-#include <EEPROM.h>
 #include "EEPROMUtils.h"
 
 const uint8_t MASK_OPEN = 0xAA;
 const uint8_t MASK_CLOSED = 0x55;
 
-const int DIRECTION_OPEN = HIGH;
-const int DIRECTION_CLOSE = LOW;
+const int MOTOR_POWER_OFF = 0;
+const int MOTOR_POWER_LOW = 100;
+const int MOTOR_POWER_FULL = 220;
 
 const int TILT_SENSOR_OPEN = LOW;
 const int TILT_SENSOR_CLOSED = HIGH;
 
-RainCoverHandler::RainCoverHandler(const uint8_t _motorPowerPin, const uint8_t _motorDirectionPin, const uint8_t _tiltSensorPin, int _memAddress) :
-	motorPowerPin(_motorPowerPin)
-	, motorDirectionPin(_motorDirectionPin)
+RainCoverHandler::RainCoverHandler(const uint8_t _motorOpenPin, const uint8_t _motorClosePin, const uint8_t _tiltSensorPin, int _memAddress) :
+	motorOpenPin(_motorOpenPin)
+	, motorClosePin(_motorClosePin)
 	, tiltSensorPin(_tiltSensorPin)
 	, memAddress(_memAddress)
 	, currentState(MASK_CLOSED)
@@ -28,16 +28,20 @@ RainCoverHandler::RainCoverHandler(const uint8_t _motorPowerPin, const uint8_t _
 	, timeToOpenCover(0)
 	, operationChrono(Chrono::SECONDS)
 {
-	pinMode(motorPowerPin, OUTPUT); digitalWrite(motorPowerPin, HIGH);
-	pinMode(motorDirectionPin, OUTPUT); digitalWrite(motorDirectionPin, HIGH);
-	pinMode(tiltSensorPin, INPUT_PULLUP);
+	pinMode(motorClosePin, OUTPUT); analogWrite(motorClosePin, 0);
+	pinMode(motorOpenPin, OUTPUT); analogWrite(motorOpenPin, 0);
+	pinMode(tiltSensorPin, INPUT);
+	digitalWrite(tiltSensorPin, HIGH);
 
-	currentState = EEPROM.read(memAddress);
+}
+
+void RainCoverHandler::setup() {
+	currentState = EEPROMUtils::read(memAddress);
 	switch (currentState) {
 	case MASK_OPEN: case MASK_CLOSED: break;
 	default:
 		currentState = MASK_CLOSED;
-		EEPROM.write(memAddress, currentState);
+		EEPROMUtils::save(memAddress, currentState);
 		break;
 	}
 
@@ -48,49 +52,55 @@ RainCoverHandler::RainCoverHandler(const uint8_t _motorPowerPin, const uint8_t _
 	}
 }
 
+
 RainCoverHandler::~RainCoverHandler() {
 	// TODO Auto-generated destructor stub
 }
 
 boolean RainCoverHandler::isCoverOpen() {
-	/*if (currentState == MASK_OPEN && digitalRead(tiltSensorPin) == TILT_SENSOR_CLOSED) {
+	if (currentState == MASK_OPEN && digitalRead(tiltSensorPin) == TILT_SENSOR_CLOSED) {
 		currentState == MASK_CLOSED;
-		EEPROM.write(memAddress, currentState);
+		EEPROMUtils::save(memAddress, currentState);
 		return true;
-	}*/
+	}
 	return currentState == MASK_OPEN;
 }
 
 void RainCoverHandler::openCover(boolean manual) {
 	isOpenedManually = manual;
 	operationChrono.restart();
-	digitalWrite(motorDirectionPin, DIRECTION_OPEN);
-	digitalWrite(motorPowerPin, LOW);
-	while (operationChrono.elapsed() < TIME_TO_OPEN_COVER_SEC/*timeToOpenCover && digitalRead(tiltSensorPin) == LOW*/) {
-		delay(500);
-	}
-	digitalWrite(motorPowerPin, HIGH);
-	digitalWrite(motorDirectionPin, HIGH);
+	analogWrite(motorOpenPin, MOTOR_POWER_FULL);
+	analogWrite(motorClosePin, 0);
 
-	/*if (operationChrono.elapsed() >= TIME_TO_OPEN_COVER_SEC && operationChrono.elapsed() < MAX_TIME_TO_OPEN_COVER_SEC && ) {
+	while (operationChrono.elapsed() < MAX_TIME_TO_OPEN_COVER_SEC) {
+		if (operationChrono.elapsed() >= TIME_TO_OPEN_COVER_SEC_MIN && digitalRead(tiltSensorPin) == TILT_SENSOR_OPEN) {
+			break;
+		}
+
+		delay(250);
+	}
+	analogWrite(motorOpenPin, 0);
+	analogWrite(motorClosePin, 0);
+
+	if (operationChrono.elapsed() >= TIME_TO_OPEN_COVER_SEC_MIN && operationChrono.elapsed() < MAX_TIME_TO_OPEN_COVER_SEC && digitalRead(tiltSensorPin) == TILT_SENSOR_OPEN) {
 		timeToOpenCover = operationChrono.elapsed();
 		EEPROMUtils::saveULong(memAddress + sizeof(currentState), timeToOpenCover);
-	}*/
+	}
 
 	currentState = MASK_OPEN;
-	EEPROM.write(memAddress, currentState);
+	EEPROMUtils::save(memAddress, currentState);
 }
 
 void RainCoverHandler::closeCover() {
-	digitalWrite(motorDirectionPin, DIRECTION_CLOSE);
-	digitalWrite(motorPowerPin, LOW);
 	operationChrono.restart();
-	while (operationChrono.elapsed() < TIME_TO_OPEN_COVER_SEC/*timeToOpenCover*/) {
-		delay(500);
+	analogWrite(motorClosePin, MOTOR_POWER_FULL);
+	analogWrite(motorOpenPin, 0);
+	while (operationChrono.elapsed() < timeToOpenCover) {
+		delay(250);
 	}
-	digitalWrite(motorPowerPin, HIGH);
-	digitalWrite(motorDirectionPin, HIGH);
+	analogWrite(motorOpenPin, 0);
+	analogWrite(motorClosePin, 0);
 	currentState = MASK_CLOSED;
-	EEPROM.write(memAddress, currentState);
+	EEPROMUtils::save(memAddress, currentState);
 }
 

@@ -8,32 +8,32 @@
 #include "WaterInValve.h"
 
 WaterInValve::WaterInValve(const uint8_t _valvePin) :
-	Valve(),
-	valvePin(_valvePin)
+	Valve()
+	, valvePin(_valvePin)
+	, openState(false)
 {
-	pinMode(valvePin, OUTPUT);
-	digitalWrite(valvePin, HIGH);
-
+	closeValveChrono.restart();
 	openValveChrono.stop();
+
+	pinMode(valvePin, OUTPUT);
+	digitalWrite(valvePin, LOW);
 }
 
 WaterInValve::~WaterInValve() {
+	digitalWrite(valvePin, LOW);
+}
+
+boolean WaterInValve::openValve() {
+	pinMode(valvePin, OUTPUT);
 	digitalWrite(valvePin, HIGH);
+	return setValvePosition(Position::VALVE_OPEN);
 }
 
-boolean WaterInValve::setValvePosition(Position position) {
-	if (isSamePosition(position)) return false;
-	switch (position) {
-	case VALVE_OPEN: {
-		digitalWrite(valvePin, LOW);
-	} break;
-	case VALVE_CLOSED: {
-		digitalWrite(valvePin, HIGH);
-	} break;
-	}
-	return Valve::setValvePosition(position);
+boolean WaterInValve::closeValve() {
+	pinMode(valvePin, OUTPUT);
+	digitalWrite(valvePin, LOW);
+	return setValvePosition(Position::VALVE_CLOSED);
 }
 
-boolean WaterInValve::isOpen() { return digitalRead(valvePin) == LOW; }
 
 

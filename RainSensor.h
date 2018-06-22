@@ -12,7 +12,7 @@
 #include <RTClib.h>
 
 const uint32_t MIN_RAIN_DURATION = 600l;	// In unixtime seconds
-const uint32_t MIN_RAIN_TIME_TO_OPEN_COVER = 60l;	// In unixtime seconds
+const uint32_t MIN_RAIN_TIME_TO_OPEN_COVER = 240l;	// In unixtime seconds
 
 enum RainIntensity { none, mist, moderate, intense };
 const RainIntensity MIN_RAIN_INTENSITY = RainIntensity::moderate;
@@ -59,16 +59,19 @@ private:
 	RainIntensity lastIntensity;
 	uint32_t rainStartedTime;	// unixtime seconds
 
-	RTC_DS1307& rtc;
+	RTC_DS3231& rtc;
 	LastRainInfo lastRainInfo;
 
 	RainIntensity valueToIntensity(int value) const;
 public:
 
-	RainSensor(const uint8_t _pin, const int _memAddress, RTC_DS1307& _rtc);
+	RainSensor(const uint8_t _pin, const int _memAddress, RTC_DS3231& _rtc);
 	virtual ~RainSensor();
 
+	void setup();
+
 	RainIntensity getIntensity();
+	static const char* getIntensityAsString(RainIntensity intensity);
 	const char* getIntensityString();
 	unsigned long secondsFromRainStarted() const { return rainStartedTime > 0 ? rtc.now().unixtime() - rainStartedTime : 0; }
 

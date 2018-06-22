@@ -10,7 +10,7 @@
 
 const char* INTENSITY_NAMES[] = {"No rain", "Mist", "Moderate", "Intense" };
 
-RainSensor::RainSensor(const uint8_t _pin, const int _memAddress, RTC_DS1307& _rtc):
+RainSensor::RainSensor(const uint8_t _pin, const int _memAddress, RTC_DS3231& _rtc):
 	pin(_pin)
 	, memAddress(_memAddress)
 	, rtc(_rtc)
@@ -19,6 +19,9 @@ RainSensor::RainSensor(const uint8_t _pin, const int _memAddress, RTC_DS1307& _r
 	, lastRainInfo()
 {
 	pinMode(pin, INPUT);
+}
+
+void RainSensor::setup() {
 	EEPROMUtils::read_bytes(memAddress, (uint8_t *)&lastRainInfo, sizeof(lastRainInfo));
 }
 
@@ -60,6 +63,10 @@ RainIntensity RainSensor::getIntensity() {
 		lastIntensity = newValue;
 	}
 	return lastIntensity;
+}
+
+static const char* RainSensor::getIntensityAsString(RainIntensity intensity) {
+	return INTENSITY_NAMES[intensity];
 }
 
 const char* RainSensor::getIntensityString() {

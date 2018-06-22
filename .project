@@ -34,12 +34,17 @@
 		<link>
 			<name>core/core</name>
 			<type>2</type>
-			<locationURI>ECLIPSE_HOME/arduinoPlugin/packages/arduino/hardware/avr/1.6.19/cores/arduino</locationURI>
+			<locationURI>ECLIPSE_HOME/arduinoPlugin/packages/arduino/hardware/avr/1.6.20/cores/arduino</locationURI>
 		</link>
 		<link>
 			<name>core/variant</name>
 			<type>2</type>
-			<locationURI>ECLIPSE_HOME/arduinoPlugin/packages/arduino/hardware/avr/1.6.19/variants/eightanaloginputs</locationURI>
+			<locationURI>ECLIPSE_HOME/arduinoPlugin/packages/arduino/hardware/avr/1.6.20/variants/eightanaloginputs</locationURI>
+		</link>
+		<link>
+			<name>libraries/AT24C1024-master</name>
+			<type>2</type>
+			<location>/home/dennis/Arduino/libraries/AT24C1024-master</location>
 		</link>
 		<link>
 			<name>libraries/AccelStepper</name>
@@ -49,17 +54,17 @@
 		<link>
 			<name>libraries/CheapStepper</name>
 			<type>2</type>
-			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/CheapStepper/0.2.0</locationURI>
+			<location>/home/dennis/Arduino/libraries/CheapStepper</location>
 		</link>
 		<link>
 			<name>libraries/Chrono</name>
 			<type>2</type>
-			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/Chrono/1.0.0</locationURI>
+			<location>/home/dennis/Arduino/libraries/Chrono</location>
 		</link>
 		<link>
 			<name>libraries/EEPROM</name>
 			<type>2</type>
-			<locationURI>ECLIPSE_HOME/arduinoPlugin/packages/arduino/hardware/avr/1.6.19/libraries/EEPROM</locationURI>
+			<locationURI>ECLIPSE_HOME/arduinoPlugin/packages/arduino/hardware/avr/1.6.20/libraries/EEPROM</locationURI>
 		</link>
 		<link>
 			<name>libraries/LiquidCrystal_I2C</name>
@@ -69,7 +74,7 @@
 		<link>
 			<name>libraries/Low-Power</name>
 			<type>2</type>
-			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/Low-Power/1.6.0</locationURI>
+			<location>/home/dennis/Arduino/libraries/Low-Power</location>
 		</link>
 		<link>
 			<name>libraries/RTClib</name>
@@ -79,12 +84,12 @@
 		<link>
 			<name>libraries/TimerOne</name>
 			<type>2</type>
-			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/TimerOne/1.1.0</locationURI>
+			<location>/home/dennis/Arduino/libraries/TimerOne</location>
 		</link>
 		<link>
 			<name>libraries/Wire</name>
 			<type>2</type>
-			<locationURI>ECLIPSE_HOME/arduinoPlugin/packages/arduino/hardware/avr/1.6.19/libraries/Wire</locationURI>
+			<locationURI>ECLIPSE_HOME/arduinoPlugin/packages/arduino/hardware/avr/1.6.20/libraries/Wire</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>
