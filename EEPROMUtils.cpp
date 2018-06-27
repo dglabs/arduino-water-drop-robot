@@ -5,7 +5,7 @@
  *      Author: dennis
  */
 
-#define USE_AT24C1024
+//#define USE_AT24C1024
 
 #ifdef USE_AT24C1024
 

@@ -27,7 +27,7 @@
 #include "DS3232RTC.h"
 
 const long ACTIVE_STATE_TIME_SECONDS = 60;
-const int POWER_SAVE_SYCLES = 2;
+const int POWER_SAVE_SYCLES = 3;
 
 class RobotController: public AbstractController {
 public:
@@ -40,9 +40,9 @@ protected:
 	RobotState currentState;
 
 	void setCurrentState(RobotState _state);
-	boolean checkRainOut();
-	boolean processScheduleEvent();
-	void prepareWinterOperation();
+	virtual boolean checkRainOut();
+	virtual boolean processScheduleEvent();
+	virtual void prepareWinterOperation();
 
 public:
 	RobotController(const uint8_t _mainPowerPin

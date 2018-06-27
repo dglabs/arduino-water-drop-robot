@@ -14,6 +14,7 @@ RobotDisplay::RobotDisplay(LiquidCrystal_I2C& _lcd, RTC_DS3231& _rtc, WaterLevel
 		, RainSensor& _rainSensor, RainCoverHandler& _rainCoverHandler, BatteryMonitor& _batteryMonitor, DS3232RTC& _rtcDS3232) :
 	backligtOnChrono(Chrono::SECONDS)
 	, currentState(State::Dashboard)
+	, backlightOn(false)
 	, lcd(_lcd)
 	, rtc(_rtc)
 	, waterLevelMeter(_waterLevelMeter)
@@ -109,9 +110,9 @@ void RobotDisplay::update(DateTime& now) {
 	    lcd.print(" ");
 
 		if (LCD_ROWS > 2) {
-		    lcd.setCursor(0, 2);
+			lcd.setCursor(16, 0); // lcd.setCursor(0, 2);
 			lcd.print("TODAY: "); lcd.print(waterFlowMeter.getStatistics().today.litres, DEC); lcd.print("L");
-		    lcd.setCursor(0, 3);
+		    lcd.setCursor(16, 1);  // lcd.setCursor(0, 3);
 			lcd.print("BATT: "); lcd.print(batteryMonitor.getVdd()); lcd.print("V ");
 			lcd.print(rtcDS3232.temperature() / 4); lcd.print("C  ");
 		}
@@ -119,8 +120,8 @@ void RobotDisplay::update(DateTime& now) {
 	case OutValve: {
 	    lcd.setCursor(0, 0);
 	    lcd.print("OUT WTR:");
-	    lcd.print(waterOutValve.isOpen() ? "ON " : "OFF");
-    	lcd.print("     ");
+	    lcd.print(waterOutValve.getStateString());
+    	lcd.print("    ");
 
 	    if (waterOutValve.isOpen()) {
 	    	lcd.print(waterOutValve.valveOpenSeconds());
@@ -135,7 +136,7 @@ void RobotDisplay::update(DateTime& now) {
 	    	lcd.print("  ");
 
 			if (LCD_ROWS > 2) {
-			    lcd.setCursor(0, 2);
+			    lcd.setCursor(16, 1);
 			    lcd.print("LEVEL:");
 			    lcd.print(waterLevelMeter.readLevel());
 			    lcd.print("% ");
@@ -168,21 +169,21 @@ void RobotDisplay::update(DateTime& now) {
 	    lcd.setCursor(0, 0);
 	    lcd.print("RAIN: "); lcd.print(rainSensor.getIntensityString());
 	    lcd.setCursor(0, 1);
-	    lcd.print("COVER: "); lcd.print(rainCoverHandler.isCoverOpen() ? "OPEN  " : "CLOSED");
+	    lcd.print("COVER: "); lcd.print(rainCoverHandler.getStateString());
 		if (LCD_ROWS > 2) {
-		    lcd.setCursor(0, 2);
+			lcd.setCursor(16, 0); //lcd.setCursor(0, 2);
 		    LastRainInfo info;
 		    rainSensor.getLastRainInfo(info);
 		    if (info.startTime > 0) {
 		    	DateTime startTime(info.startTime);
 		    	lcd.print("LAST:"); lcd.print(startTime.day()); lcd.print("/"); lcd.print(startTime.month()); lcd.print(" ");
 			    lcd.print(startTime.hour()); lcd.print(":"); lcd.print(startTime.minute()); lcd.print(" ");
-			    lcd.setCursor(0, 3);
-			    lcd.print(info.duration); lcd.print("m "); lcd.print(RainSensor::getIntensityAsString(info.intensity));
+			    lcd.setCursor(16, 1); // lcd.setCursor(0, 3);
+			    lcd.print(info.duration / 60); lcd.print("m "); lcd.print(RainSensor::getIntensityAsString(info.intensity));
 		    }
 		    else {
 		    	lcd.print("NO LAST RAIN");
-			    lcd.setCursor(0, 3);
+		    	lcd.setCursor(16, 1); // lcd.setCursor(0, 3);
 			    lcd.print("              ");
 		    }
 
@@ -218,9 +219,9 @@ void RobotDisplay::update(DateTime& now) {
 	    lcd.setCursor(0, 1);
 	    lcd.print("MONTH: "); lcd.print(waterFlowMeter.getStatistics().lastMonth.litres, DEC); lcd.print("L");
 		if (LCD_ROWS > 2) {
-		    lcd.setCursor(0, 2);
+			lcd.setCursor(16, 0); // lcd.setCursor(0, 2);
 		    lcd.print("YEAR: "); lcd.print(waterFlowMeter.getStatistics().lastYear.litres, DEC); lcd.print("L");
-		    lcd.setCursor(0, 3);
+		    lcd.setCursor(16, 1); // lcd.setCursor(0, 3);
 		    lcd.print("TOTAL: "); lcd.print(waterFlowMeter.getStatistics().total.litres, DEC); lcd.print("L");
 		}
 	} break;

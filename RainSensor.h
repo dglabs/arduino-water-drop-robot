@@ -17,20 +17,31 @@ const uint32_t MIN_RAIN_TIME_TO_OPEN_COVER = 240l;	// In unixtime seconds
 enum RainIntensity { none, mist, moderate, intense };
 const RainIntensity MIN_RAIN_INTENSITY = RainIntensity::moderate;
 
+const uint16_t RAIN_SIGNATURE = 0x7A93U;
+
 struct LastRainInfo {
+	uint16_t signature;
 	uint32_t startTime;
 	uint32_t duration;
 	RainIntensity intensity;
 
 	LastRainInfo() :
-		startTime(0)
+		signature(RAIN_SIGNATURE)
+		, startTime(0)
 		, duration(0)
-		, intensity(none) {}
+		, intensity(RainIntensity::none) {}
 
 	LastRainInfo(const uint32_t _startTime, const uint32_t _duration, const RainIntensity _intensity) :
-		startTime(_startTime)
+		signature(RAIN_SIGNATURE)
+		, startTime(_startTime)
 		, duration(_duration)
 		, intensity(_intensity) {}
+
+	LastRainInfo(const LastRainInfo& src) :
+		signature(RAIN_SIGNATURE)
+		, startTime(src.startTime)
+		, duration(src.duration)
+		, intensity(src.intensity) {}
 
 	void copy(const LastRainInfo& src) {
 		this->startTime = src.startTime;

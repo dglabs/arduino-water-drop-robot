@@ -67,20 +67,20 @@ void clk_ISR() {
 		if (digitalRead(instance->pinCLK) == HIGH) {   // found a low-to-high on channel A
 			if (digitalRead(instance->pinDT) == LOW) {  // check channel B to see which way
 			  // encoder is turning
-			  increment = 1;         // CCW
+			  increment = -1;         // CCW
 			}
 			else {
-			  increment = -1;         // CW
+			  increment = 1;         // CW
 			}
 		}
 		else                                        // found a high-to-low on channel A
 		{
 			if (digitalRead(instance->pinDT) == LOW) {   // check channel B to see which way
 			  // encoder is turning
-			  increment = -1;          // CW
+			  increment = 1;          // CW
 			}
 			else {
-			  increment = 1;          // CCW
+			  increment = -1;          // CCW
 			}
 		}
 		instance->curPos += increment;

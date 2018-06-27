@@ -7,10 +7,9 @@
 
 #include "WaterInValve.h"
 
-WaterInValve::WaterInValve(const uint8_t _valvePin) :
-	Valve()
+WaterInValve::WaterInValve(const uint8_t _valveMask, const uint8_t _valvePin) :
+	Valve(_valveMask)
 	, valvePin(_valvePin)
-	, openState(false)
 {
 	closeValveChrono.restart();
 	openValveChrono.stop();
@@ -23,16 +22,17 @@ WaterInValve::~WaterInValve() {
 	digitalWrite(valvePin, LOW);
 }
 
-boolean WaterInValve::openValve() {
+boolean WaterInValve::openValve(const uint8_t _valveMask /*= 0xFF*/, boolean manual /*= false*/) {
+	Valve::openValve(_valveMask, manual);
 	pinMode(valvePin, OUTPUT);
 	digitalWrite(valvePin, HIGH);
-	return setValvePosition(Position::VALVE_OPEN);
+	return setValvePosition(State::Open);
 }
 
 boolean WaterInValve::closeValve() {
 	pinMode(valvePin, OUTPUT);
 	digitalWrite(valvePin, LOW);
-	return setValvePosition(Position::VALVE_CLOSED);
+	return setValvePosition(State::Closed);
 }
 
 

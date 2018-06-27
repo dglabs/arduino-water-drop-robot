@@ -20,19 +20,18 @@ WaterSchedule::WaterSchedule(const int _memAddr, RTC_DS3231& _rtc, RainSensor& _
 
 	{
 		// Default every day event
-		DefaultEvents[0] = ScheduleEvent(EventType::WaterOut, DateTime(2018, 06, 10, 20, 20, 0), 1600 /*duration*/, 60 /*liters*/, 5 /*minTemperature*/
-				, 10 /*minLevel*/, 100 /*maxLevel*/, EventFlags::SkipIfRecentRain, 80);
+		DefaultEvents[0] = ScheduleEvent(1, EventType::WaterOut, DateTime(2018, 06, 10, 20, 20, 0), 800 /*duration*/, 60 /*liters*/, 5 /*minTemperature*/
+				, 10 /*minLevel*/, 100 /*maxLevel*/, EventFlags::Active | EventFlags::SkipIfRecentRain, VALVE_OUT0 /*valves*/, 80 /*max humidity*/, 0 /*period flags*/, 1 /*repeat period days*/, 0 /*last action time*/);
 		// Additional event when it's very hot
-		DefaultEvents[1] = ScheduleEvent(EventType::WaterOut, DateTime(2018, 06, 10, 13, 0, 0), 300 /*duration*/, 30 /*liters*/, 32 /*minTemperature*/
-				, 10 /*minLevel*/, 100 /*maxLevel*/, EventFlags::SkipIfRecentRain, 60);
+		DefaultEvents[1] = ScheduleEvent(2, EventType::WaterOut, DateTime(2018, 06, 10, 13, 0, 0), 300 /*duration*/, 30 /*liters*/, 40 /*minTemperature*/
+				, 10 /*minLevel*/, 100 /*maxLevel*/, EventFlags::Active | EventFlags::SkipIfRecentRain, VALVE_OUT0, 60/*max humidity*/, 0 /*period flags*/, 1 /*repeat period days*/, 0 /*last action time*/);
 		// Additional backup event if it was raining
-		DefaultEvents[2] = ScheduleEvent(EventType::WaterOut, DateTime(2018, 06, 10, 22, 0, 0), 300 /*duration*/, 30 /*liters*/, 15 /*minTemperature*/
-				, 10 /*minLevel*/, 100 /*maxLevel*/, EventFlags::OnlyAfterRecentRain, 100);
+		DefaultEvents[2] = ScheduleEvent(3, EventType::WaterOut, DateTime(2018, 06, 10, 22, 0, 0), 300 /*duration*/, 30 /*liters*/, 15 /*minTemperature*/
+				, 10 /*minLevel*/, 100 /*maxLevel*/, /*EventFlags::Active |*/ EventFlags::OnlyAfterRecentRain, VALVE_OUT0, 100/*max humidity*/, 0 /*period flags*/, 1 /*repeat period days*/, 0 /*last action time*/);
 		// Event to fill-in the tank
-		DefaultEvents[3] = ScheduleEvent(EventType::WaterIn, DateTime(2018, 06, 10, 10, 30, 0), 600 /*duration*/, 300 /*liters*/, 5 /*minTemperature*/
-				, 51 /*minLevel*/, 100 /*maxLevel*/, 0, 100);
-		DefaultEvents[4] = ScheduleEvent(EventType::None, DateTime(2018, 06, 10, 11, 0, 0), 0 /*duration*/, 0 /*liters*/, 0 /*minTemperature*/
-				, 51 /*minLevel*/, 100 /*maxLevel*/, 0);
+		DefaultEvents[3] = ScheduleEvent(4, EventType::WaterIn, DateTime(2018, 06, 10, 10, 30, 0), 600 /*duration*/, 300 /*liters*/, 5 /*minTemperature*/
+				, 51 /*minLevel*/, 100 /*maxLevel*/, EventFlags::Active, VALVE_IN, 100/*max humidity*/, 0 /*period flags*/, 1 /*repeat period days*/, 0 /*last action time*/);
+		DefaultEvents[4] = ScheduleEvent();
 
 		currentEvent = DefaultEvents[0];
 

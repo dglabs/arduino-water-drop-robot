@@ -35,9 +35,11 @@ const int WTR_VOLUME_ADDR = WTR_LEVEL_ADDR + STORAGE_SIZE_WATER_LEVEL;
 const int COVER_STATE_ADDR = WTR_VOLUME_ADDR + STORAGE_SIZE_WATER_VOLUME;
 const int RAIN_SENSOR_ADDR = COVER_STATE_ADDR + STORAGE_SIZE_COVER_HANDLER;
 
-const int SCHEDULE_EEPROM_ADDR = RAIN_SENSOR_ADDR + STORAGE_SIZE_RAIN_SENSOR;
+const int SCHEDULE_EEPROM_ADDR = 0x200;	// 512 bytes from start
+const int SCHEDULE_EEPROM_SIZE = 0x200;	// 512 bytes length
 
-const int LOG_EEPROM_ADDR = SCHEDULE_EEPROM_ADDR + STORAGE_SIZE_SCHEDULE;
+const int LOG_EEPROM_ADDR = 0x400;	// 1024 bytes from start
+const int LOG_EEPROM_SIZE = 0x8000 - LOG_EEPROM_ADDR - 1;	// 31K length
 
 // Main power pin
 const uint8_t MAIN_POWER = 13;
@@ -47,12 +49,12 @@ const uint8_t WTR_OUT_OPEN = 5;
 const uint8_t WTR_OUT_CLOSE = 6;
 const uint8_t WTR_OUT_SIGNAL_OPEN = 4;
 const uint8_t WTR_OUT_SIGNAL_CLOSED = 11;
-WaterMotorizedValve waterOutValve(WTR_OUT_ADDR, WTR_OUT_OPEN, WTR_OUT_CLOSE/*, WTR_OUT_SIGNAL_OPEN, WTR_OUT_SIGNAL_CLOSED*/);
+WaterMotorizedValve waterOutValve(VALVE_OUT0 | VALVE_OUT1 | VALVE_OUT2, WTR_OUT_ADDR, WTR_OUT_OPEN, WTR_OUT_CLOSE/*, WTR_OUT_SIGNAL_OPEN, WTR_OUT_SIGNAL_CLOSED*/);
 
 // Water in controls
 // Water in solenoid valve
 const uint8_t WTR_IN_RELAY = 12;
-WaterInValve waterInValve(WTR_IN_RELAY);
+WaterInValve waterInValve(VALVE_IN, WTR_IN_RELAY);
 
 // Water level meter
 const uint8_t WATER_LEVEL_INPUTS[] = { A2, A3 };
@@ -72,7 +74,7 @@ RainSensor rainSensor(A7, RAIN_SENSOR_ADDR, rtc);
 const uint8_t COVER_MOTOR_DIRECTION_PIN = 9;
 const uint8_t COVER_MOTOR_POWER_PIN = 10;
 const uint8_t TILT_SENSOR_PIN = 15;	// A1 pin in digital mode
-RainCoverHandler rainCoverHandler(COVER_MOTOR_POWER_PIN, COVER_MOTOR_DIRECTION_PIN, TILT_SENSOR_PIN, COVER_STATE_ADDR);
+RainCoverHandler rainCoverHandler(VALVE_RAIN, COVER_MOTOR_POWER_PIN, COVER_MOTOR_DIRECTION_PIN, TILT_SENSOR_PIN, COVER_STATE_ADDR);
 
 // Battery monitor
 const uint8_t BATTERY_POWER_SENSOR_PIN = A0;

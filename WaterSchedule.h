@@ -14,13 +14,25 @@
 
 enum EventType { None, WaterOut, WaterIn };
 enum EventFlags {
-	SkipIfRecentRain = 1
-	, OnlyAfterRecentRain = 2
+	SkipIfRecentRain = 0x01
+	, OnlyAfterRecentRain = 0x02
+	, Active = 0x04
 };
 
 const int EVENTS_SIZE = 10;
 
+// Valve flags values
+const uint8_t VALVE_OUT0 = 0x01;
+const uint8_t VALVE_OUT1 = 0x02;
+const uint8_t VALVE_OUT2 = 0x04;
+const uint8_t VALVE_ALL_OUT = 0x07;
+const uint8_t VALVE_IN = 0x08;
+const uint8_t VALVE_RAIN = 0x10;
+
+const uint8_t NO_ID = 0xFF;
+
 struct ScheduleEvent {
+	uint8_t id;
 	EventType type;	// Event type
 	uint32_t checkTime;	// Time to check for this event
 	int duration;	// Minimal duration
@@ -29,26 +41,41 @@ struct ScheduleEvent {
 	uint8_t minLevel; 	// Minimal allowed water level
 	uint8_t maxLevel; 	// Max allowed water level
 	uint8_t flags;	// Bit flags
+	uint8_t valves;	// Bit mask of valves to be open
 	uint8_t maxSoilHumidity; // Max allowed soil humidity
+	uint8_t periodFlags;		// Flags to setup type of period
+	uint8_t repeatPeriodDays;	// repeat this event every repeatPeriodDays. 1 means daily,
+	uint32_t lastActionTime;	// Time to check for this event
 
-	ScheduleEvent() :type(EventType::None) {}
+	ScheduleEvent() :  id(0), type(EventType::None) {}
 
-	ScheduleEvent(const ScheduleEvent& event) {
-		type = event.type;
-		checkTime = event.checkTime;
-		duration = event.duration;
-		liters = event.liters;
-		minLevel = event.minLevel;
-		maxLevel = event.maxLevel;
-		minTemperature = event.minTemperature;
-		flags = event.flags;
-		maxSoilHumidity = event.maxSoilHumidity;
-	}
+	ScheduleEvent(const ScheduleEvent& event) :
+		id(event.id)
+		, type(event.type)
+		, checkTime(event.checkTime)
+		, duration(event.duration)
+		, liters(event.liters)
+		, minTemperature(event.minTemperature)
+		, minLevel(event.minLevel)
+		, maxLevel(event.maxLevel)
+		, flags(event.flags)
+		, valves(event.valves)
+		, maxSoilHumidity(event.maxSoilHumidity)
+		, periodFlags(event.periodFlags)
+		, repeatPeriodDays(event.repeatPeriodDays)
+		, lastActionTime(event.lastActionTime) {}
 
-	ScheduleEvent(EventType _type, DateTime _checkTime, int _duration, int _liters
+
+	ScheduleEvent(uint8_t _id, EventType _type, DateTime _checkTime, int _duration, int _liters
 			, uint8_t _minTemperature, uint8_t _minLevel
-			, uint8_t _maxLevel = 100, uint8_t _flags = 0, uint8_t _maxSoilHumidity = 100) :
-		type(_type)
+			, uint8_t _maxLevel = 100, uint8_t _flags = 0
+			, uint8_t _valves = VALVE_OUT0
+			, uint8_t _maxSoilHumidity = 100
+			, uint8_t _periodFlags = 9
+			, uint8_t _repeatPeriodDays = 1
+			, uint32_t _lastActionTime = 0) :
+		id(_id)
+		, type(_type)
 		, checkTime(_checkTime.unixtime())
 		, duration(_duration)
 		, liters(_liters)
@@ -56,32 +83,41 @@ struct ScheduleEvent {
 		, minLevel(_minLevel)
 		, maxLevel(_maxLevel)
 		, flags(_flags)
-		, maxSoilHumidity(_maxSoilHumidity) {}
+		, valves(_valves)
+		, maxSoilHumidity(_maxSoilHumidity)
+		, periodFlags(_periodFlags)
+		, repeatPeriodDays(_repeatPeriodDays)
+		, lastActionTime(_lastActionTime) {}
 };
 
+const uint16_t HEADER_SIGNATURE = 0x5A78U;
+
 struct ShcheduleHeader {
+	uint16_t signature;
 	uint32_t startDate;	// Date to start operation
 	uint32_t stopDate;	// Date to stop operation
 	uint8_t minTemperature; // minimal operation temperature
 	uint8_t numRecords;	// Number of schedule records
 
 	boolean isValid() const {
-		return startDate > 0 && startDate < 0xFFFFFFFF &&
+		return  signature == HEADER_SIGNATURE && startDate > 0 && startDate < 0xFFFFFFFF &&
 				stopDate > 0 && stopDate < 0xFFFFFFFF && (minTemperature > 5 && minTemperature < 20) &&
 				(numRecords > 0 && numRecords <= 10);
 	}
 
-	ShcheduleHeader() {}
+	ShcheduleHeader() :
+		signature(HEADER_SIGNATURE) {}
 
-	ShcheduleHeader(const ShcheduleHeader& h) {
-		startDate = h.startDate;
-		stopDate = h.stopDate;
-		minTemperature = h.minTemperature;
-		numRecords = h.numRecords;
-	}
+	ShcheduleHeader(const ShcheduleHeader& h) :
+		signature(HEADER_SIGNATURE)
+		, startDate(h.startDate)
+		, stopDate(h.stopDate)
+		, minTemperature(h.minTemperature)
+		, numRecords(h.numRecords) {}
 
 	ShcheduleHeader(DateTime _startDate, DateTime _stopDate, uint8_t _minTemperature, uint8_t _numRecords) :
-		startDate(_startDate.unixtime())
+		signature(HEADER_SIGNATURE)
+		, startDate(_startDate.unixtime())
 		, stopDate(_stopDate.unixtime())
 		, minTemperature(_minTemperature)
 		, numRecords(_numRecords) {}

@@ -23,6 +23,10 @@ RainSensor::RainSensor(const uint8_t _pin, const int _memAddress, RTC_DS3231& _r
 
 void RainSensor::setup() {
 	EEPROMUtils::read_bytes(memAddress, (uint8_t *)&lastRainInfo, sizeof(lastRainInfo));
+	if (lastRainInfo.signature != RAIN_SIGNATURE) {
+		lastRainInfo = LastRainInfo();
+		EEPROMUtils::save_bytes(memAddress, (uint8_t *)&lastRainInfo, sizeof(lastRainInfo));
+	}
 }
 
 RainSensor::~RainSensor() {

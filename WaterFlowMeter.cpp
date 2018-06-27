@@ -6,8 +6,8 @@
  */
 
 #include <Arduino.h>
+#include <RTClib.h>
 #include "WaterFlowMeter.h"
-#include <EEPROM.h>
 #include "EEPROMUtils.h"
 
 volatile unsigned long flowCounter = 0;
@@ -22,8 +22,9 @@ void waterFlow_ISR() {
 WaterFlowMeter::WaterFlowMeter(const int _memAddress, RTC_DS3231& _rtc):
 	memAddress(_memAddress)
 	, rtc(_rtc)
-	, startedChrono(Chrono::SECONDS){
-
+	, startedChrono(Chrono::SECONDS)
+	, totalVolume(0)
+{
 	pinMode(ISR_PIN, INPUT);
 	digitalWrite(ISR_PIN, LOW);
 
@@ -56,7 +57,6 @@ WaterFlowMeter::~WaterFlowMeter() {
 }
 
 void WaterFlowMeter::startWaterOut() {
-	adjustStatictcs();
 	flowCounter = 0;
 	startedChrono.restart();
 }
