@@ -200,6 +200,10 @@ LOOP:
 
 	    		if (schedule.getCurrentEvent().type != EventType::None) processScheduleEvent();
 
+	    		if (now.hour() == 0 && now.minute() == 0) {
+	    			waterFlowMeter.adjustStatictcs();
+	    		}
+
 	    		if (batteryMonitor.isPowerLow()) {
 	    			display.turnOffBacklight();
 	    			display.print("LOW POWER!!!  ");

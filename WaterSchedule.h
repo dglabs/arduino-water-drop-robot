@@ -150,7 +150,7 @@ public:
 	void setCurrentEvent(const ScheduleEvent& event) { currentEvent = event; }
 
 	boolean isEventAppropriate(const ScheduleEvent& event, int temperature);
-	void dismissCurrentEvent() { currentEvent.type = EventType::None; };
+	void dismissCurrentEvent();
 	boolean isInActiveDateRange(int temperature);
 };
 

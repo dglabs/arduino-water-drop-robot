@@ -45,11 +45,10 @@ void WaterSchedule::setup() {
 		EEPROMUtils::save_bytes(memAddr, (uint8_t*)&header, sizeof(ShcheduleHeader));
 		EEPROMUtils::save_bytes(memAddr + sizeof(ShcheduleHeader), (uint8_t*)&DefaultEvents, sizeof(DefaultEvents));
 	}
-	/*else {
+	else {
 		header = bufHeader;
-		EEPROMUtils::read_bytes(memAddr + sizeof(ShcheduleHeader), (uint8_t*)&DefaultEvents, sizeof(DefaultEvents));
-		EEPROMUtils::read_bytes(memAddr + sizeof(ShcheduleHeader), (uint8_t*)&DefaultEvents, sizeof(DefaultEvents));
-	}*/
+		EEPROMUtils::read_bytes(memAddr + sizeof(ShcheduleHeader), (uint8_t*)&DefaultEvents, header.numRecords * sizeof(ScheduleEvent));
+	}
 }
 
 WaterSchedule::~WaterSchedule() {
@@ -76,7 +75,7 @@ boolean WaterSchedule::isInActiveDateRange(int temperature) {
 
 boolean WaterSchedule::isEventAppropriate(const ScheduleEvent& event, int temperature) {
 	boolean result = false;
-	if (event.type == EventType::None) return false;
+	if (event.type == EventType::None || (event.flags & EventFlags::Active) == 0) return false;
 
 	/*Serial.print("Event: "); Serial.println(event.type);
 	Serial.print("Temp: "); Serial.println(temperature);*/
@@ -124,6 +123,7 @@ boolean WaterSchedule::scanEvents(int temperature) {
 	for (int i = 0; i < header.numRecords && result == false; i++) {
 		ScheduleEvent event = DefaultEvents[i];
 		if (event.type == EventType::None) break;	// This is terminating event
+		if ((event.flags & EventFlags::Active) == 0) continue;
 		result = isEventAppropriate(event, temperature);
 		if (result) { currentEvent = event; break; }
 	}
@@ -131,4 +131,18 @@ boolean WaterSchedule::scanEvents(int temperature) {
 	if (!result) currentEvent.type = EventType::None;
 
 	return result;
+}
+
+void WaterSchedule::dismissCurrentEvent() {
+	if (currentEvent.id != NO_ID) {
+		for (int i = 0; i < header.numRecords && DefaultEvents[i].type != EventType::None; i++) {
+			if (currentEvent.id == DefaultEvents[i].id) {
+				DateTime now = rtc.now();
+				DefaultEvents[i].lastActionTime = now.unixtime();
+				EEPROMUtils::save_bytes(memAddr + sizeof(ShcheduleHeader) + (i * sizeof(ScheduleEvent)), (uint8_t*)&DefaultEvents[i], sizeof(ScheduleEvent));
+				break;
+			}
+		}
+	}
+	currentEvent.type = EventType::None;
 }
