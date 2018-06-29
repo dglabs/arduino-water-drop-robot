@@ -13,19 +13,20 @@ const char* INTENSITY_NAMES[] = {"No rain", "Mist", "Moderate", "Intense" };
 RainSensor::RainSensor(const uint8_t _pin, const int _memAddress, RTC_DS3231& _rtc):
 	pin(_pin)
 	, memAddress(_memAddress)
-	, rtc(_rtc)
-	, rainStartedTime(0)
 	, lastIntensity(RainIntensity::none)
+	, maxIntensity(RainIntensity::none)
+	, rainStartedTime(0)
+	, rtc(_rtc)
 	, lastRainInfo()
 {
 	pinMode(pin, INPUT);
 }
 
 void RainSensor::setup() {
-	EEPROMUtils::read_bytes(memAddress, (uint8_t *)&lastRainInfo, sizeof(lastRainInfo));
+	EEPROMUtils::read_bytes(memAddress, (uint8_t *)&lastRainInfo, sizeof(LastRainInfo));
 	if (lastRainInfo.signature != RAIN_SIGNATURE) {
 		lastRainInfo = LastRainInfo();
-		EEPROMUtils::save_bytes(memAddress, (uint8_t *)&lastRainInfo, sizeof(lastRainInfo));
+		EEPROMUtils::save_bytes(memAddress, (uint8_t *)&lastRainInfo, sizeof(LastRainInfo));
 	}
 }
 
@@ -43,26 +44,22 @@ RainIntensity RainSensor::valueToIntensity(int value) const {
 RainIntensity RainSensor::getIntensity() {
 	RainIntensity newValue = valueToIntensity(analogRead(pin));
 	if (newValue != lastIntensity) {
-		switch (lastIntensity) {
-		case RainIntensity::none:
-		case RainIntensity::mist: {
-			if (newValue > RainIntensity::mist) {
-				rainStartedTime = rtc.now().unixtime();
+		if (newValue > RainIntensity::none && rainStartedTime == 0)
+			rainStartedTime = rtc.now().unixtime();
+
+		if (newValue > maxIntensity) maxIntensity = newValue;
+
+		if (newValue == RainIntensity::none && lastIntensity > RainIntensity::none) {
+			// If rain is stopped, then save it as last rain into storage
+			uint32_t duration;
+			if (rainStartedTime > 0 && (duration = rtc.now().unixtime() - rainStartedTime) >= MIN_RAIN_DURATION) {
+				lastRainInfo.startTime = rainStartedTime;
+				lastRainInfo.duration = duration;
+				lastRainInfo.intensity = maxIntensity;
+				maxIntensity = RainIntensity::none;
+				EEPROMUtils::save_bytes(memAddress, (uint8_t *)&lastRainInfo, sizeof(lastRainInfo));
 			}
-		} break;
-		case RainIntensity::moderate:
-		case RainIntensity::intense: {
-			if (newValue < RainIntensity::moderate) {
-				// If rain is stopped, then save it as last rain into storage
-				uint32_t duration;
-				if (rainStartedTime > 0 && (duration = rtc.now().unixtime() - rainStartedTime) >= MIN_RAIN_DURATION) {
-					lastRainInfo.startTime = rainStartedTime;
-					lastRainInfo.duration = duration;
-					lastRainInfo.intensity = lastIntensity;
-					EEPROMUtils::save_bytes(memAddress, (uint8_t *)&lastRainInfo, sizeof(lastRainInfo));
-				}
-			}
-		} break;
+			rainStartedTime = 0;
 		}
 		lastIntensity = newValue;
 	}

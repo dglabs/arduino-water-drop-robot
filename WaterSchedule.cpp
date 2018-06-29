@@ -96,11 +96,18 @@ boolean WaterSchedule::checkEventSecondaryConditions(const ScheduleEvent& event,
 	}
 
 	// Skip even if this is not in allowed period
-	if (event.lastActionTime > 0 && event.repeatPeriodDays > 1) {
+	if (event.lastActionTime > 0) {
 		DateTime lastActionTime(event.lastActionTime);
 		TimeSpan span = (lastActionTime - now) + TimeSpan(event.duration * 2);
-		if (span.days() < event.repeatPeriodDays)
+
+		// Block already performed event for 12 hours
+		if (span.hours() < 12)
 			result = false;
+
+		if (event.repeatPeriodDays > 1) {
+			if (span.days() < event.repeatPeriodDays)
+				result = false;
+		}
 	}
 
 	return result;

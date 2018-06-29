@@ -36,8 +36,8 @@ const int RAIN_SENSOR_ADDR = COVER_STATE_ADDR + STORAGE_SIZE_COVER_HANDLER;
 const int SCHEDULE_EEPROM_ADDR = 0x200;	// 512 bytes from start
 const int SCHEDULE_EEPROM_SIZE = 0x200;	// 512 bytes length
 
-const int LOG_EEPROM_ADDR = 0x400;	// 1024 bytes from start
-const int LOG_EEPROM_SIZE = 0x8000 - LOG_EEPROM_ADDR - 1;	// 31K length
+const int LOG_EEPROM_ADDR = 0x0;	// 0 bytes from start
+const int LOG_EEPROM_SIZE = 0x1000 - LOG_EEPROM_ADDR - 1;	// 4K length
 
 // Main power pin
 const uint8_t MAIN_POWER = 13;
@@ -132,15 +132,4 @@ void setup () {
 
 void loop () {
 	controller.loop();
-	//delay(1000);
-	
-	/*keyboard.tick();
-	if (keyboard.isRotated()) Serial.println("Rotated");
-	if (keyboard.isPressed()) Serial.println("Pressed");*/
-
-	/*digitalWrite(MAIN_POWER, HIGH);	// Turn off all peripherals
-	delay(1000);
-	digitalWrite(MAIN_POWER, LOW);	// Turn off all peripherals
-	delay(1000);*/
-	
 }

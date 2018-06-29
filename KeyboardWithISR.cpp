@@ -6,10 +6,13 @@
  */
 
 #include "KeyboardWithISR.h"
+#include <PinChangeInterrupt.h>
 
 KeyboardWithISR* instance = NULL;
 
 void clk_ISR();
+void dt_ISR();
+void press_ISR();
 
 KeyboardWithISR::KeyboardWithISR(uint8_t _pinCLK, uint8_t _pinDT, uint8_t _pinSW, uint8_t _maxPos) :
 		pinCLK(_pinCLK)
@@ -37,12 +40,14 @@ KeyboardWithISR::KeyboardWithISR(uint8_t _pinCLK, uint8_t _pinDT, uint8_t _pinSW
 	pressedChrono.restart();
 
 	attachInterrupt(digitalPinToInterrupt(pinCLK), clk_ISR, CHANGE);
+	attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(pinDT), clk_ISR, CHANGE);
+	attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(pinSW), press_ISR, FALLING);
 }
 
 void KeyboardWithISR::checkPressed() {
 	boolean p = digitalRead(instance->pinSW) == LOW;
 	if (p) {
-		if (!pressed && pressedChrono.elapsed() > 200) {
+		if (!pressed && pressedChrono.elapsed() > 100) {
 			if (pressChrono.isRunning()) {
 				if (pressChrono.elapsed() > 100) {
 					pressed = true;
@@ -59,9 +64,12 @@ void KeyboardWithISR::checkPressed() {
 	}
 }
 
+void press_ISR() {
+	instance->checkPressed();
+}
+
 void clk_ISR() {
-	if (!instance->rotated && instance->rotatedChrono.elapsed() > 50) {
-		if (instance->rotating) delay(1);	// debounce
+	/*if (!instance->rotated && instance->rotatedChrono.elapsed() > 50)*/ {
 
 		int increment = 0;
 		if (digitalRead(instance->pinCLK) == HIGH) {   // found a low-to-high on channel A
@@ -90,43 +98,38 @@ void clk_ISR() {
 		instance->rotated = true;
 		instance->rotatedChrono.restart();
 	}
+}
 
+void dt_ISR() {
+	/*if (!instance->rotated && instance->rotatedChrono.elapsed() > 50)*/ {
 
-	/*boolean curCLK = digitalRead(instance->pinCLK);
-	boolean curDT = digitalRead(instance->pinDT);
-	if (instance->prevCLK != instance->prevDT) {
 		int increment = 0;
-		if (!instance->prevCLK && curCLK) {
-			increment = curDT ? 1 : -1;
-		}
-		else if (instance->prevCLK && !curCLK) {
-			increment = curDT ? -1 : 1;
-		}
-	}
-	instance->prevCLK = curCLK;
-	instance->prevDT = curDT;*/
-
-
-
-	/*if (!instance->rotated && instance->rotatedChrono.elapsed() > 100) {
-		if (instance->rotating) delay(1);	// debounce
-
-		if (digitalRead(instance->pinCLK) != digitalRead(instance->pinDT)) {
-			if (digitalRead(instance->pinCLK) == HIGH)
-			{
-				instance->curPos++;
-				instance->curPos %= instance->maxPos;
+		if (digitalRead(instance->pinDT) == HIGH) {   // found a low-to-high on channel A
+			if (digitalRead(instance->pinCLK) == LOW) {  // check channel B to see which way
+			  // encoder is turning
+			  increment = -1;         // CCW
 			}
-			else  {
-				instance->curPos = instance->curPos == 0 ? instance->maxPos - 1 : instance->curPos - 1;
+			else {
+			  increment = 1;         // CW
 			}
 		}
+		else                                        // found a high-to-low on channel A
+		{
+			if (digitalRead(instance->pinCLK) == LOW) {   // check channel B to see which way
+			  // encoder is turning
+			  increment = 1;          // CW
+			}
+			else {
+			  increment = -1;          // CCW
+			}
+		}
+		instance->curPos += increment;
+		instance->curPos = instance->curPos < 0 ? instance->maxPos - 1 : instance->curPos % instance->maxPos;
 
 		instance->rotating = false;
 		instance->rotated = true;
 		instance->rotatedChrono.restart();
-	}*/
-	instance->checkPressed();
+	}
 }
 
 KeyboardWithISR::~KeyboardWithISR() {

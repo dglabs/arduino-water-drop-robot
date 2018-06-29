@@ -39,17 +39,15 @@ void WaterFlowMeter::initStatistics() {
 		EEPROMUtils::saveULong(memAddress, totalVolume);
 	}
 
-	if (statistics.total.startTime == 0 || statistics.total.litres == 0) {
-		EEPROMUtils::read_bytes(memAddress + sizeof(totalVolume), (uint8_t *)&statistics, sizeof(PourStatistics));
-		if (statistics.signature != SIGNATURE) {
-			DateTime now = rtc.now();
-			DateTime startOfDay(now.year(), now.month(), now.day(), 0, 0, 0);
+	EEPROMUtils::read_bytes(memAddress + sizeof(totalVolume), (uint8_t *)&statistics, sizeof(PourStatistics));
+	if (statistics.signature != FLOW_SIGNATURE) {
+		DateTime now = rtc.now();
+		DateTime startOfDay(now.year(), now.month(), now.day(), 0, 0, 0);
 
-			statistics.init(startOfDay.unixtime());
-			EEPROMUtils::save_bytes(memAddress + sizeof(totalVolume), (uint8_t *)&statistics, sizeof(PourStatistics));
-		}
-		else adjustStatictcs();
+		statistics.init(startOfDay.unixtime());
+		EEPROMUtils::save_bytes(memAddress + sizeof(totalVolume), (uint8_t *)&statistics, sizeof(PourStatistics));
 	}
+	else adjustStatictcs();
 }
 
 WaterFlowMeter::~WaterFlowMeter() {

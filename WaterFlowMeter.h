@@ -20,7 +20,7 @@ struct PourSummary {
 
 };
 
-const uint32_t SIGNATURE = 0xAB57ED55;
+const uint32_t FLOW_SIGNATURE = 0xAB57ED55;
 
 struct PourStatistics {
 	uint32_t signature;
@@ -31,7 +31,7 @@ struct PourStatistics {
 
 	PourStatistics() { init(0); };
 
-	void init(uint32_t _startTime) { signature = SIGNATURE; total.init(_startTime), lastYear.init(_startTime); lastMonth.init(_startTime); today.init(_startTime); }
+	void init(uint32_t _startTime) { signature = FLOW_SIGNATURE; total.init(_startTime), lastYear.init(_startTime); lastMonth.init(_startTime); today.init(_startTime); }
 };
 
 const int STORAGE_SIZE_WATER_VOLUME = sizeof(unsigned long) /*Total volume*/ + sizeof(PourStatistics);

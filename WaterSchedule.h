@@ -36,8 +36,8 @@ struct ScheduleEvent {
 	uint8_t id;
 	EventType type;	// Event type
 	uint32_t checkTime;	// Time to check for this event
-	int duration;	// Minimal duration
-	int liters;		// Minimal liters to pour
+	unsigned int duration;	// Minimal duration
+	unsigned int liters;	// Minimal liters to pour
 	uint8_t minTemperature;	// Minimal temperature to engage this event
 	uint8_t minLevel; 	// Minimal allowed water level
 	uint8_t maxLevel; 	// Max allowed water level

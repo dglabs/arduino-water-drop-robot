@@ -66,6 +66,7 @@ public:
 
 	virtual boolean openValve(const uint8_t /*_valvesMask = 0xFF*/, boolean manual = false) {
 		isOpenManually = manual;
+		return true;
 	}
 
 	virtual boolean closeValve() = 0;
@@ -85,8 +86,8 @@ public:
 		}
 	}
 
-	int valveOpenSeconds() const { return openValveChrono.elapsed(); }
-	int valveCloseSeconds() const { return closeValveChrono.elapsed(); }
+	unsigned int valveOpenSeconds() const { return openValveChrono.elapsed(); }
+	unsigned int valveCloseSeconds() const { return closeValveChrono.elapsed(); }
 
 	boolean isManualOpen() const { return isOpenManually; }
 

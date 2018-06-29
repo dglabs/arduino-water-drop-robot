@@ -68,6 +68,7 @@ private:
 	const int memAddress;
 
 	RainIntensity lastIntensity;
+	RainIntensity maxIntensity;
 	uint32_t rainStartedTime;	// unixtime seconds
 
 	RTC_DS3231& rtc;

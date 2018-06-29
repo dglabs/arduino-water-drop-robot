@@ -24,8 +24,8 @@ public:
 	virtual boolean openValve(const uint8_t _valvesMask = 0xFF, boolean manual = false);
 	virtual boolean closeValve();
 
-	virtual boolean isOpen() { return digitalRead(valvePin) == HIGH; };
-	virtual boolean isClosed() { return digitalRead(valvePin) == LOW; };
+	virtual boolean isOpen() { return state == State::Open; };
+	virtual boolean isClosed() { return state == State::Closed; };
 
 	virtual State getState() { return isOpen() ? State::Open : State::Closed; }
 };

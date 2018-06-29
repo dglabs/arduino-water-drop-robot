@@ -47,16 +47,6 @@
 			<location>/home/dennis/Arduino/libraries/AT24C1024-master</location>
 		</link>
 		<link>
-			<name>libraries/AccelStepper</name>
-			<type>2</type>
-			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/AccelStepper/1.57.1</locationURI>
-		</link>
-		<link>
-			<name>libraries/CheapStepper</name>
-			<type>2</type>
-			<location>/home/dennis/Arduino/libraries/CheapStepper</location>
-		</link>
-		<link>
 			<name>libraries/Chrono</name>
 			<type>2</type>
 			<location>/home/dennis/Arduino/libraries/Chrono</location>
@@ -77,14 +67,14 @@
 			<location>/home/dennis/Arduino/libraries/Low-Power</location>
 		</link>
 		<link>
+			<name>libraries/PinChangeInterrupt</name>
+			<type>2</type>
+			<location>/home/dennis/Arduino/libraries/PinChangeInterrupt</location>
+		</link>
+		<link>
 			<name>libraries/RTClib</name>
 			<type>2</type>
 			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/RTClib/1.2.0</locationURI>
-		</link>
-		<link>
-			<name>libraries/TimerOne</name>
-			<type>2</type>
-			<location>/home/dennis/Arduino/libraries/TimerOne</location>
 		</link>
 		<link>
 			<name>libraries/Wire</name>

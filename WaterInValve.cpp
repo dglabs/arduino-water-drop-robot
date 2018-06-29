@@ -16,6 +16,7 @@ WaterInValve::WaterInValve(const uint8_t _valveMask, const uint8_t _valvePin) :
 
 	pinMode(valvePin, OUTPUT);
 	digitalWrite(valvePin, LOW);
+	setValvePosition(State::Closed);
 }
 
 WaterInValve::~WaterInValve() {

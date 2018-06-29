@@ -136,6 +136,12 @@ boolean RobotController::processScheduleEvent() {
 	} break;
 	}
 
+	// Backup branch to close In valve
+	if (waterInValve.isOpen() && waterLevelMeter.readLevel() >= 100) {
+		waterInValve.closeValve();
+		schedule.dismissCurrentEvent();
+	}
+
 	return false;
 }
 
