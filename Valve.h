@@ -64,9 +64,10 @@ public:
 		return true;
 	}
 
-	virtual boolean openValve(const uint8_t _valvesMask = 0xFF, boolean manual = false) {
+	virtual boolean openValve(const uint8_t /*_valvesMask = 0xFF*/, boolean manual = false) {
 		isOpenManually = manual;
 	}
+
 	virtual boolean closeValve() = 0;
 	virtual boolean isOpen() = 0;
 	virtual boolean isClosed() = 0;

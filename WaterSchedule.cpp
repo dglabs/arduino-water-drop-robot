@@ -9,10 +9,11 @@
 #include "WaterSchedule.h"
 #include "EEPROMUtils.h"
 
-WaterSchedule::WaterSchedule(const int _memAddr, RTC_DS3231& _rtc, RainSensor& _rainSensor):
+WaterSchedule::WaterSchedule(const int _memAddr, RTC_DS3231& _rtc, RainSensor& _rainSensor, WaterFlowMeter& _waterFlowMeter):
 	memAddr(_memAddr)
 	, rtc(_rtc)
 	, rainSensor(_rainSensor)
+	, waterFlowMeter(_waterFlowMeter)
 	, header(DateTime(2018, 04, 01, 0, 0, 0)	// April 1st start time
 			, DateTime(2018, 11, 01, 0, 0, 0)	// November 1st stop time
 			, 5 // 5C minimal operating temperature
@@ -73,6 +74,38 @@ boolean WaterSchedule::isInActiveDateRange(int temperature) {
 }
 
 
+boolean WaterSchedule::checkEventSecondaryConditions(const ScheduleEvent& event, int temperature) {
+	boolean result = true;
+
+	if (temperature < event.minTemperature)
+		result = false;
+
+	// Check recent rain flag
+	LastRainInfo rainInfo;
+	rainSensor.getLastRainInfo(rainInfo);
+
+	if (rainInfo.startTime > 0 && rainInfo.startTime < 0xFFFFFFFF) {
+		DateTime lastRaintTime(rainInfo.startTime);
+		TimeSpan rainSpan = now - lastRaintTime;
+
+		if (rainSpan.days() <= 1 && rainInfo.enoughRainPoured() && (event.flags & EventFlags::SkipIfRecentRain) != 0)
+			result = false;
+
+		if (!(rainSpan.days() <= 1 && rainInfo.enoughRainPoured()) && (event.flags & EventFlags::OnlyAfterRecentRain) != 0)
+			result = false;
+	}
+
+	// Skip even if this is not in allowed period
+	if (event.lastActionTime > 0 && event.repeatPeriodDays > 1) {
+		DateTime lastActionTime(event.lastActionTime);
+		TimeSpan span = (lastActionTime - now) + TimeSpan(event.duration * 2);
+		if (span.days() < event.repeatPeriodDays)
+			result = false;
+	}
+
+	return result;
+}
+
 boolean WaterSchedule::isEventAppropriate(const ScheduleEvent& event, int temperature) {
 	boolean result = false;
 	if (event.type == EventType::None || (event.flags & EventFlags::Active) == 0) return false;
@@ -88,23 +121,14 @@ boolean WaterSchedule::isEventAppropriate(const ScheduleEvent& event, int temper
 		long eventSpan = now.secondstime() - actionTime.secondstime();
 
 		if (eventSpan < event.duration) {
-			result = true;
+			result = checkEventSecondaryConditions(event, temperature);
 
-			if (temperature < event.minTemperature)
-				result = false;
+			// Skip event if enough water already poured today
+			if (result && event.type == EventType::WaterOut) {
+				uint32_t maxTodayLiters = getTodayMaxPouring(event.valves, temperature);
+				uint32_t alreadyPoured = waterFlowMeter.getStatistics().today.litres;
 
-			// Check recent rain flag
-			LastRainInfo rainInfo;
-			rainSensor.getLastRainInfo(rainInfo);
-
-			if (rainInfo.startTime > 0 && rainInfo.startTime < 0xFFFFFFFF) {
-				DateTime lastRaintTime(rainInfo.startTime);
-				TimeSpan rainSpan = now - lastRaintTime;
-
-				if (rainSpan.days() <= 1 && rainInfo.enoughRainPoured() && (event.flags & EventFlags::SkipIfRecentRain) != 0)
-					result = false;
-
-				if (!(rainSpan.days() <= 1 && rainInfo.enoughRainPoured()) && (event.flags & EventFlags::OnlyAfterRecentRain) != 0)
+				if (alreadyPoured + (event.liters / 2) > maxTodayLiters)
 					result = false;
 			}
 		}
@@ -121,15 +145,30 @@ boolean WaterSchedule::scanEvents(int temperature) {
 
 	boolean result = false;
 	for (int i = 0; i < header.numRecords && result == false; i++) {
-		ScheduleEvent event = DefaultEvents[i];
+		ScheduleEvent& event = DefaultEvents[i];
 		if (event.type == EventType::None) break;	// This is terminating event
 		if ((event.flags & EventFlags::Active) == 0) continue;
 		result = isEventAppropriate(event, temperature);
-		if (result) { currentEvent = event; break; }
+		if (result) {
+			currentEvent = event; break;
+		}
 	}
 
 	if (!result) currentEvent.type = EventType::None;
+	return result;
+}
 
+uint32_t WaterSchedule::getTodayMaxPouring(uint8_t valveFlags, int temperature) {
+	uint32_t result = 0;
+	now = rtc.now();
+	for (int i = 0; i < header.numRecords && DefaultEvents[i].type != EventType::None; i++) {
+		ScheduleEvent& event = DefaultEvents[i];
+		if (event.type == EventType::WaterOut && (event.flags & EventFlags::Active) != 0 && (event.valves & valveFlags) != 0) {
+			if (checkEventSecondaryConditions(event, temperature)) {
+				result += event.liters;
+			}
+		}
+	}
 	return result;
 }
 

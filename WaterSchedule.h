@@ -11,6 +11,7 @@
 #include <Arduino.h>
 #include <RTClib.h>
 #include "RainSensor.h"
+#include "WaterFlowMeter.h"
 
 enum EventType { None, WaterOut, WaterIn };
 enum EventFlags {
@@ -131,6 +132,7 @@ private:
 
 	RTC_DS3231& rtc;
 	RainSensor& rainSensor;
+	WaterFlowMeter& waterFlowMeter;
 
 	DateTime now;
 	ShcheduleHeader header;
@@ -139,7 +141,7 @@ private:
 	ScheduleEvent DefaultEvents[EVENTS_SIZE];
 
 public:
-	WaterSchedule(const int _memAddr, RTC_DS3231& _rtc, RainSensor& _rainSensor);
+	WaterSchedule(const int _memAddr, RTC_DS3231& _rtc, RainSensor& _rainSensor, WaterFlowMeter& _waterFlowMeter);
 	virtual ~WaterSchedule();
 
 	void setup();
@@ -152,6 +154,9 @@ public:
 	boolean isEventAppropriate(const ScheduleEvent& event, int temperature);
 	void dismissCurrentEvent();
 	boolean isInActiveDateRange(int temperature);
+
+	boolean checkEventSecondaryConditions(const ScheduleEvent& event, int temperature);
+	uint32_t getTodayMaxPouring(uint8_t valveFlags = 0xFF, int temperature = 100);
 };
 
 #endif /* WATERSCHEDULE_H_ */

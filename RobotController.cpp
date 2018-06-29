@@ -125,7 +125,7 @@ boolean RobotController::processScheduleEvent() {
 	    		// Start water in if no water poring out
 	    		if (startWaterInAfter && !batteryMonitor.isPowerLow()) {
 	    			schedule.setCurrentEvent(ScheduleEvent(NO_ID, EventType::WaterIn, now, 250 /*duration*/, 300 /*liters*/, 5 /*minTemperature*/
-	    					, 51 /*minLevel*/, 100 /*maxLevel*/, 0));
+	    					, 51 /*minLevel*/, 100 /*maxLevel*/, EventFlags::Active));
 	    			goto LOOP;
 	    		}
 	    		else return false;
@@ -241,7 +241,7 @@ LOOP:
 	    		}
 	    		else {
 	    			schedule.setCurrentEvent(ScheduleEvent(NO_ID, EventType::WaterOut, now, MAX_OUT_VALVE_OPEN_TIME_SECONDS /*duration*/, 60 /*liters*/, 5 /*minTemperature*/
-	    					, 10 /*minLevel*/, 100 /*maxLevel*/, 0));
+	    					, 10 /*minLevel*/, 100 /*maxLevel*/, EventFlags::Active));
    				}
 	    	} break;
 	    	case RobotDisplay::InValve: {
@@ -251,7 +251,7 @@ LOOP:
 	    		}
 	    		else {
 	    			schedule.setCurrentEvent(ScheduleEvent(NO_ID, EventType::WaterIn, now, MAX_IN_VALVE_OPEN_TIME_SECONDS /*duration*/, 300 /*liters*/, 5 /*minTemperature*/
-	    					, 51 /*minLevel*/, 100 /*maxLevel*/, 0));
+	    					, 51 /*minLevel*/, 100 /*maxLevel*/, EventFlags::Active));
 	    		}
 	    	} break;
 	    	case RobotDisplay::RainControl: {

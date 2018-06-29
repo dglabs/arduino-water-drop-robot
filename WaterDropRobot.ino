@@ -20,8 +20,6 @@
 // Date and time functions using a DS1307 RTC connected via I2C and Wire lib
 #include <RTClib.h>
 
-//#define TEST_MODE
-
 // RTC and Display
 RTC_DS3231 rtc;
 DS3232RTC rtcDS3232(false);
@@ -81,7 +79,7 @@ const uint8_t BATTERY_POWER_SENSOR_PIN = A0;
 BatteryMonitor batteryMonitor(BATTERY_POWER_SENSOR_PIN);
 
 // Scheduler
-WaterSchedule schedule(SCHEDULE_EEPROM_ADDR, rtc, rainSensor);
+WaterSchedule schedule(SCHEDULE_EEPROM_ADDR, rtc, rainSensor, waterFlowMeter);
 
 // Display class
 RobotDisplay display(lcd
