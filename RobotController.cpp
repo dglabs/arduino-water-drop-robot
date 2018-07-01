@@ -302,21 +302,25 @@ LOOP:
 boolean RobotController::checkRainOut() {
 	boolean result = false;
 
-	if (rainSensor.getIntensity() > RainIntensity::mist && rainCoverHandler.isClosed() && waterLevelMeter.readLevel() < 80 &&
-			rainSensor.secondsFromRainStarted() > MIN_RAIN_TIME_TO_OPEN_COVER && schedule.isInActiveDateRange(temperature)) {
-		result = true;
-		display.setState(RobotDisplay::RainControl);
-		display.update(now);
-		rainCoverHandler.openValve(VALVE_RAIN, false);
+	if (rainCoverHandler.isClosed()) {
+		if (rainSensor.getIntensity() > RainIntensity::mist && waterLevelMeter.readLevel() < 100 &&
+			rainSensor.secondsFromRainStarted() > MIN_RAIN_TIME_TO_OPEN_COVER && rainCoverHandler.valveCloseSeconds() > MIN_RAIN_TIME_TO_OPEN_COVER &&
+			schedule.isInActiveDateRange(temperature)) {
+			result = true;
+			display.setState(RobotDisplay::RainControl);
+			display.update(now);
+			rainCoverHandler.openValve(VALVE_RAIN, false);
+		}
 	}
-
-	if (((rainCoverHandler.isOpen() && !rainCoverHandler.isManualOpen()) && rainCoverHandler.valveOpenSeconds() > MIN_RAIN_TIME_TO_OPEN_COVER &&
-			(waterLevelMeter.readLevel() >= 100 || rainSensor.getIntensity() <= RainIntensity::mist)) ||
-			!schedule.isInActiveDateRange(temperature)) {
-		result = true;
-		display.setState(RobotDisplay::RainControl);
-		display.update(now);
-		rainCoverHandler.closeValve();
+	else if (rainCoverHandler.isOpen() && !rainCoverHandler.isManualOpen()) {
+			if (rainCoverHandler.valveOpenSeconds() > MIN_RAIN_TIME_TO_OPEN_COVER &&
+				(waterLevelMeter.readLevel() >= 100 || rainSensor.getIntensity() <= RainIntensity::mist))
+			{
+				result = true;
+				display.setState(RobotDisplay::RainControl);
+				display.update(now);
+				rainCoverHandler.closeValve();
+			}
 	}
 
     return result;

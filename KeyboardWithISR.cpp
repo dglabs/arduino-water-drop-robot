@@ -40,8 +40,8 @@ KeyboardWithISR::KeyboardWithISR(uint8_t _pinCLK, uint8_t _pinDT, uint8_t _pinSW
 	pressedChrono.restart();
 
 	attachInterrupt(digitalPinToInterrupt(pinCLK), clk_ISR, CHANGE);
-	attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(pinDT), clk_ISR, CHANGE);
-	attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(pinSW), press_ISR, FALLING);
+	//attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(pinDT), clk_ISR, CHANGE);
+	attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(pinSW), press_ISR, CHANGE);
 }
 
 void KeyboardWithISR::checkPressed() {
@@ -69,8 +69,7 @@ void press_ISR() {
 }
 
 void clk_ISR() {
-	/*if (!instance->rotated && instance->rotatedChrono.elapsed() > 50)*/ {
-
+	if (!instance->rotated && instance->rotatedChrono.elapsed() > 50) {
 		int increment = 0;
 		if (digitalRead(instance->pinCLK) == HIGH) {   // found a low-to-high on channel A
 			if (digitalRead(instance->pinDT) == LOW) {  // check channel B to see which way
@@ -101,8 +100,7 @@ void clk_ISR() {
 }
 
 void dt_ISR() {
-	/*if (!instance->rotated && instance->rotatedChrono.elapsed() > 50)*/ {
-
+	if (!instance->rotated && instance->rotatedChrono.elapsed() > 50) {
 		int increment = 0;
 		if (digitalRead(instance->pinDT) == HIGH) {   // found a low-to-high on channel A
 			if (digitalRead(instance->pinCLK) == LOW) {  // check channel B to see which way

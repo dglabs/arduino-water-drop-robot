@@ -135,8 +135,8 @@ boolean WaterSchedule::isEventAppropriate(const ScheduleEvent& event, int temper
 				uint32_t maxTodayLiters = getTodayMaxPouring(event.valves, temperature);
 				uint32_t alreadyPoured = waterFlowMeter.getStatistics().today.litres;
 
-				if (alreadyPoured + (event.liters / 2) > maxTodayLiters)
-					result = false;
+				/*if (alreadyPoured + (event.liters / 2) > maxTodayLiters)
+					result = false;*/
 			}
 		}
 	}
