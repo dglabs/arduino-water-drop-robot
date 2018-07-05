@@ -25,6 +25,7 @@
 #include "WaterSchedule.h"
 #include "BatteryMonitor.h"
 #include "DS3232RTC.h"
+#include "WeatherManager.h"
 
 const long ACTIVE_STATE_TIME_SECONDS = 60;
 const int POWER_SAVE_SYCLES = 3;
@@ -46,6 +47,7 @@ protected:
 
 public:
 	RobotController(const uint8_t _mainPowerPin
+			, uint8_t _wifi3VPowerPin
 			, RTC_DS3231& _rtc
 			, KeyboardWithISR& _keyboard
 			, WaterLevelMeter& _waterLevelMeter
@@ -57,7 +59,11 @@ public:
 			, RainCoverHandler& _rainCoverHandler
 			, WaterSchedule& _schedule
 			, BatteryMonitor& _batteryMonitor
-			, DS3232RTC& rtsDS3232);
+#ifdef BOARD_V2
+			, PCF8574& _portExtender
+#endif
+			, DS3232RTC& rtsDS3232
+			, WeatherManager& _weatherManager);
 	virtual ~RobotController();
 
 	virtual void setup();

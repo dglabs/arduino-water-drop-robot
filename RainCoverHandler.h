@@ -12,6 +12,7 @@
 #include <Arduino.h>
 #include <Chrono.h>
 
+#include "CommonDefs.h"
 #include "Valve.h"
 
 const int STORAGE_SIZE_COVER_HANDLER = sizeof(uint8_t) + sizeof(unsigned long);
@@ -31,7 +32,14 @@ private:
 	Chrono operationChrono;
 
 public:
-	RainCoverHandler(const uint8_t _valveMask, const uint8_t _motorOpenPin, const uint8_t _motorClosePin, const uint8_t _tiltSensorPin, int _memAddress);
+	RainCoverHandler(const uint8_t _valveMask
+#ifdef BOARD_V2
+		, PCF8574& _portExtender
+#endif
+		, const uint8_t _motorOpenPin
+		, const uint8_t _motorClosePin
+		, const uint8_t _tiltSensorPin
+		, int _memAddress);
 	virtual ~RainCoverHandler();
 
 	virtual void setup();

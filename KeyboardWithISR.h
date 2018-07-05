@@ -10,6 +10,7 @@
 
 #include <Arduino.h>
 #include <Chrono.h>
+#include "CommonDefs.h"
 
 class KeyboardWithISR  {
 public:

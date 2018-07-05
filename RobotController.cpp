@@ -14,6 +14,7 @@
 //const DateTime waterInTime(2017, 06, 10, 10, 0, 0);
 
 RobotController::RobotController(const uint8_t _mainPowerPin
+		, uint8_t _wifi3VPowerPin
 		, RTC_DS3231& _rtc
 		, KeyboardWithISR& _keyboard
 		, WaterLevelMeter& _waterLevelMeter
@@ -25,9 +26,14 @@ RobotController::RobotController(const uint8_t _mainPowerPin
 		, RainCoverHandler& _rainCoverHandler
 		, WaterSchedule& _schedule
 		, BatteryMonitor& _batteryMonitor
-		, DS3232RTC& _rtcDS3232) :
+#ifdef BOARD_V2
+		, PCF8574& _portExtender
+#endif
+		, DS3232RTC& _rtcDS3232
+		, WeatherManager& _weatherManager) :
 
 		AbstractController( _mainPowerPin
+			, _wifi3VPowerPin
 			, _rtc
 			, _keyboard
 			, _waterLevelMeter
@@ -39,7 +45,11 @@ RobotController::RobotController(const uint8_t _mainPowerPin
 			, _rainCoverHandler
 			, _schedule
 			, _batteryMonitor
-			, _rtcDS3232)
+#ifdef BOARD_V2
+			, _portExtender
+#endif
+			, _rtcDS3232
+			, _weatherManager)
 
 		, currentState(RobotState::Active)
 		, activeStateChrono(Chrono::SECONDS)

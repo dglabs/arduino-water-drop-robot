@@ -5,10 +5,20 @@
  *      Author: dennis
  */
 
+
 #include "WaterInValve.h"
 
-WaterInValve::WaterInValve(const uint8_t _valveMask, const uint8_t _valvePin) :
+WaterInValve::WaterInValve(const uint8_t _valveMask
+#ifdef BOARD_V2
+		, PCF8574& _portExtender
+#endif
+		, const uint8_t _valvePin
+) :
+#ifdef BOARD_V2
+	Valve(_valveMask, _portExtender)
+#else
 	Valve(_valveMask)
+#endif
 	, valvePin(_valvePin)
 {
 	closeValveChrono.restart();

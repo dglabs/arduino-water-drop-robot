@@ -18,8 +18,19 @@ const int MOTOR_POWER_FULL = 220;
 const int TILT_SENSOR_OPEN = LOW;
 const int TILT_SENSOR_CLOSED = HIGH;
 
-RainCoverHandler::RainCoverHandler(const uint8_t _valveMask, const uint8_t _motorOpenPin, const uint8_t _motorClosePin, const uint8_t _tiltSensorPin, int _memAddress) :
+RainCoverHandler::RainCoverHandler(const uint8_t _valveMask
+#ifdef BOARD_V2
+		, PCF8574& _portExtender
+#endif
+		, const uint8_t _motorOpenPin
+		, const uint8_t _motorClosePin
+		, const uint8_t _tiltSensorPin
+		, int _memAddress) :
+#ifdef BOARD_V2
+	Valve(_valveMask, _portExtender)
+#else
 	Valve(_valveMask)
+#endif
 	, motorOpenPin(_motorOpenPin)
 	, motorClosePin(_motorClosePin)
 	, tiltSensorPin(_tiltSensorPin)
