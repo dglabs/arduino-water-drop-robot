@@ -9,23 +9,8 @@
 #define ROBOTCONTROLLER_H_
 
 #include <Arduino.h>
-#include <LiquidCrystal_I2C.h>
-#include <RTClib.h>
-#include <Chrono.h>
-
+#include "WaterDropRobot.h"
 #include "AbstractController.h"
-#include "WaterMotorizedValve.h"
-#include "WaterInValve.h"
-#include "WaterLevelMeter.h"
-#include "KeyboardWithISR.h"
-#include "RobotDisplay.h"
-#include "WaterFlowMeter.h"
-#include "RainSensor.h"
-#include "RainCoverHandler.h"
-#include "WaterSchedule.h"
-#include "BatteryMonitor.h"
-#include "DS3232RTC.h"
-#include "WeatherManager.h"
 
 const long ACTIVE_STATE_TIME_SECONDS = 60;
 const int POWER_SAVE_SYCLES = 3;
@@ -46,25 +31,7 @@ protected:
 	virtual void prepareWinterOperation();
 
 public:
-	RobotController(const uint8_t _mainPowerPin
-			, uint8_t _wifi3VPowerPin
-			, RTC_DS3231& _rtc
-			, KeyboardWithISR& _keyboard
-			, WaterLevelMeter& _waterLevelMeter
-			, WaterMotorizedValve& _waterOutValve
-			, WaterInValve& _waterInValve
-			, RobotDisplay& _display
-			, WaterFlowMeter& _waterFlowMeter
-			, RainSensor& _rainSensor
-			, RainCoverHandler& _rainCoverHandler
-			, WaterSchedule& _schedule
-			, BatteryMonitor& _batteryMonitor
-#ifdef BOARD_V2
-			, PCF8574& _portExtender
-#endif
-			, DS3232RTC& rtsDS3232
-			, WeatherManager& _weatherManager);
-	virtual ~RobotController();
+	RobotController(const uint8_t _mainPowerPin, uint8_t _wifi3VPowerPin);
 
 	virtual void setup();
 

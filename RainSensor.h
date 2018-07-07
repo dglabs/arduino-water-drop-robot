@@ -71,23 +71,28 @@ private:
 	RainIntensity maxIntensity;
 	uint32_t rainStartedTime;	// unixtime seconds
 
-	RTC_DS3231& rtc;
 	LastRainInfo lastRainInfo;
 
 	RainIntensity valueToIntensity(int value) const;
 public:
 
-	RainSensor(const uint8_t _pin, const int _memAddress, RTC_DS3231& _rtc);
-	virtual ~RainSensor();
+	RainSensor(const uint8_t _pin, const int _memAddress);
 
 	void setup();
 
 	RainIntensity getIntensity();
-	static const char* getIntensityAsString(RainIntensity intensity);
 	const char* getIntensityString();
-	unsigned long secondsFromRainStarted() const { return rainStartedTime > 0 ? rtc.now().unixtime() - rainStartedTime : 0; }
+	unsigned long secondsFromRainStarted() const;
 
 	void getLastRainInfo(LastRainInfo& info) const;
+
+	static const char* getIntensityAsString(RainIntensity intensity);
 };
+
+
+
+// Rain handling
+extern RainSensor rainSensor;
+
 
 #endif /* RAINSENSOR_H_ */

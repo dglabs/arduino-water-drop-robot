@@ -5,56 +5,28 @@
  *      Author: dennis
  */
 
-//#define USE_AT24C1024
-
-#ifdef USE_AT24C1024
-
-	#include <inttypes.h>
-	#include <AT24C1024.h>
-	AT24C1024 eprom;
-
-#else
-
-	#include <EEPROM.h>
-
-#endif
+#include <Arduino.h>
+#include <EEPROM.h>
+#include <Wire.h>
 #include "EEPROMUtils.h"
 
 static void EEPROMUtils::save(int addr, uint8_t byte) {
-#ifdef USE_AT24C1024
-	eprom.write(addr, byte);
-#else
 	EEPROM.write(addr, byte);
-#endif
 }
 
 static uint8_t EEPROMUtils::read(int addr) {
-#ifdef USE_AT24C1024
-	return eprom.read(addr);
-#else
 	return EEPROM.read(addr);
-#endif
 }
 
 
 static void EEPROMUtils::save_bytes(int addr, uint8_t *raw, uint16_t size) {
-#ifdef USE_AT24C1024
-	for (uint16_t i = 0; i < size; i++)
-		eprom.write(addr + i, raw[i]);
-#else
 	for (uint16_t i = 0; i < size; i++)
 		EEPROM.write(addr + i, raw[i]);
-#endif
 }
 
 static void EEPROMUtils::read_bytes(int addr, uint8_t *raw, uint16_t size) {
-#ifdef USE_AT24C1024
-	for (uint16_t i = 0; i < size; i++)
-		raw[i] = eprom.read(addr + i);
-#else
 	for (uint16_t i = 0; i < size; i++)
 		raw[i] = EEPROM.read(addr + i);
-#endif
 }
 
 static void EEPROMUtils::saveULong(int addr, unsigned long& value) {
@@ -66,3 +38,57 @@ static unsigned long EEPROMUtils::readULong(int addr) {
 	EEPROMUtils::read_bytes(addr, (uint8_t*)&value, sizeof(unsigned long));
 	return value;
 }
+
+void writeFlash(int deviceaddress, unsigned int eeaddress, uint8_t data )
+{
+	Wire.beginTransmission(deviceaddress);
+	Wire.write((int)(eeaddress >> 8));   // MSB
+	Wire.write((int)(eeaddress & 0xFF)); // LSB
+	Wire.write(data);
+	Wire.endTransmission();
+
+	delay(5);
+}
+
+uint8_t readFlash(int deviceaddress, unsigned int eeaddress )
+{
+	uint8_t rdata = 0xFF;
+
+	Wire.beginTransmission(deviceaddress);
+	Wire.write((int)(eeaddress >> 8));   // MSB
+	Wire.write((int)(eeaddress & 0xFF)); // LSB
+	Wire.endTransmission();
+
+	Wire.requestFrom(deviceaddress,1);
+
+	if (Wire.available()) rdata = Wire.read();
+
+	return rdata;
+}
+
+void writeFlash(int deviceaddress, unsigned int eeaddress, uint8_t* data, uint16_t size) {
+	for (uint16_t i = 0; i < size; i++, eeaddress++)
+	{
+		Wire.beginTransmission(deviceaddress);
+		Wire.write((int)(eeaddress >> 8));   // MSB
+		Wire.write((int)(eeaddress & 0xFF)); // LSB
+		Wire.write(data[i]);
+		Wire.endTransmission();
+		delay(5);
+	}
+}
+
+void readFlash(int deviceaddress, unsigned int eeaddress, uint8_t* data, uint16_t size) {
+	for (uint16_t i = 0; i < size; i++, eeaddress++)
+	{
+		Wire.beginTransmission(deviceaddress);
+		Wire.write((int)(eeaddress >> 8));   // MSB
+		Wire.write((int)(eeaddress & 0xFF)); // LSB
+		Wire.endTransmission();
+
+		Wire.requestFrom(deviceaddress,1);
+
+		if (Wire.available()) data[i] = Wire.read();
+	}
+}
+

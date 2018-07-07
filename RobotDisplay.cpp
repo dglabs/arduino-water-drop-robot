@@ -5,26 +5,13 @@
  *      Author: dennis
  */
 
-#include <RTClib.h>
-#include "RobotDisplay.h"
-#include <LiquidCrystal_I2C.h>
+#include "WaterDropRobot.h"
 
-RobotDisplay::RobotDisplay(LiquidCrystal_I2C& _lcd, RTC_DS3231& _rtc, WaterLevelMeter& _waterLevelMeter
-		, WaterMotorizedValve& _waterOutValve, WaterInValve& _waterInValve, WaterFlowMeter& _waterFlowMeter
-		, RainSensor& _rainSensor, RainCoverHandler& _rainCoverHandler, BatteryMonitor& _batteryMonitor, DS3232RTC& _rtcDS3232) :
+RobotDisplay::RobotDisplay() :
 	backligtOnChrono(Chrono::SECONDS)
 	, currentState(State::Dashboard)
 	, backlightOn(false)
-	, lcd(_lcd)
-	, rtc(_rtc)
-	, waterLevelMeter(_waterLevelMeter)
-	, waterOutValve(_waterOutValve)
-	, waterInValve(_waterInValve)
-	, waterFlowMeter(_waterFlowMeter)
-	, rainSensor(_rainSensor)
-	, rainCoverHandler(_rainCoverHandler)
-	, batteryMonitor(_batteryMonitor)
-	, rtcDS3232(_rtcDS3232)
+	, innerMenuState(false)
 {
 
 }
@@ -33,14 +20,10 @@ void RobotDisplay::initialize() {
 	lcd.init();
 	lcd.cursor_off();
 	lcd.backlight();
+
+	keyboard.setMaxPos(State::ITEM_COUNT);
 	backlightOn = true;
 	backligtOnChrono.restart(0);
-}
-
-RobotDisplay::~RobotDisplay() {
-	lcd.clear();
-	lcd.noBacklight();
-	lcd.noDisplay();
 }
 
 void RobotDisplay::turnOnBacklight() {
@@ -63,24 +46,9 @@ void RobotDisplay::powerDown() {
 
 void RobotDisplay::setState(State newState) {
 	currentState = newState;
+	keyboard.setPos(currentState);
 	lcd.init();
 }
-
-RobotDisplay::State RobotDisplay::switchNextState() {
-	RobotDisplay::State next = (RobotDisplay::State)(((int)currentState + 1) % (int)RobotDisplay::State::ITEM_COUNT);
-	setState(next);
-	return next;
-}
-
-// Dashboard, OutValve, InValve, WaterLevel, RainControl, Power
-
-RobotDisplay::State RobotDisplay::switchPrevState() {
-	RobotDisplay::State next = (int)currentState == 0 ? ((RobotDisplay::State)((int)RobotDisplay::State::ITEM_COUNT - 1)) :
-		(RobotDisplay::State)((int)currentState - 1);
-	setState(next);
-	return next;
-}
-
 
 void RobotDisplay::update(DateTime& now) {
 	switch (currentState) {
@@ -118,37 +86,57 @@ void RobotDisplay::update(DateTime& now) {
 		}
 	} break;
 	case OutValve: {
-	    lcd.setCursor(0, 0);
-	    lcd.print("OUT WTR:");
-	    lcd.print(waterOutValve.getStateString());
-    	lcd.print("    ");
+		if (!innerMenuState) {
+			lcd.setCursor(0, 0);
+			lcd.print("OUT WTR:");
+			lcd.print(waterOutValve.getStateString());
+			lcd.print("    ");
 
-	    if (waterOutValve.isOpen()) {
-	    	lcd.print(waterOutValve.valveOpenSeconds());
-	    	lcd.print("s");
+			if (waterOutValve.isOpen()) {
+				lcd.print(waterOutValve.valveOpenSeconds());
+				lcd.print("s");
 
-		    lcd.setCursor(0, 1);
-		    lcd.print("VOL:");
-		    lcd.print(waterFlowMeter.getVolumeFromStart());
-		    lcd.print("L ");
-		    lcd.print(waterFlowMeter.getVolumePerMinute());
-		    lcd.print("L/m");
-	    	lcd.print("  ");
+				lcd.setCursor(0, 1);
+				lcd.print("VOL:");
+				lcd.print(waterFlowMeter.getVolumeFromStart());
+				lcd.print("L ");
+				lcd.print(waterFlowMeter.getVolumePerMinute());
+				lcd.print("L/m   ");
 
-			if (LCD_ROWS > 2) {
-			    lcd.setCursor(16, 1);
-			    lcd.print("LEVEL:");
-			    lcd.print(waterLevelMeter.readLevel());
-			    lcd.print("% ");
+				if (LCD_ROWS > 2) {
+					lcd.setCursor(16, 1);
+					lcd.print("LEVEL:");
+					lcd.print(waterLevelMeter.readLevel());
+					lcd.print("% ");
+				}
 			}
-	    }
-	    else {
-		    lcd.setCursor(0, 1);
-		    lcd.print("L:");
-		    lcd.print(waterLevelMeter.readLevel());
-		    lcd.print("% ");
-	    }
+			else {
+				lcd.setCursor(0, 1);
+				lcd.print("L:");
+				lcd.print(waterLevelMeter.readLevel());
+				lcd.print("% ");
 
+				if (LCD_ROWS > 2) {
+					lcd.setCursor(16, 1);
+					lcd.print("LEVEL:");
+					lcd.print(waterLevelMeter.readLevel());
+					lcd.print("% ");
+				}
+			}
+		}
+		else {
+			lcd.setCursor(0, 0);
+			lcd.print("POUR VOLUME:");
+			lcd.setCursor(0, 1);
+			lcd.print(waterOutValve.getSelectedVolume());
+			lcd.print("L     ");
+			if (LCD_ROWS > 2) {
+				lcd.setCursor(16, 1);
+				lcd.print("LEVEL:");
+				lcd.print(waterLevelMeter.readLevel());
+				lcd.print("% ");
+			}
+		}
 	} break;
 	case InValve: {
 	    lcd.setCursor(0, 0);
@@ -262,3 +250,5 @@ void RobotDisplay::printNumber(unsigned long n, uint8_t base)
   lcd.print(str);
 }
 
+// Display class
+RobotDisplay display;

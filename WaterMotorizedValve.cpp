@@ -6,6 +6,7 @@
  */
 
 #include "WaterMotorizedValve.h"
+#include "WaterDropRobot.h"
 #include "EEPROMUtils.h"
 
 const int MOTOR_POWER_OFF = 0;
@@ -17,7 +18,8 @@ const int DIRECTION_CLOSE = HIGH;
 
 WaterMotorizedValve::WaterMotorizedValve(const uint8_t _valveMask
 #ifdef BOARD_V2
-		, PCF8574& _portExtender
+		, const uint8_t* _motorENPins
+		, const uint8_t _motorENCount
 #endif
 		, const int _memAddress
 		, const uint8_t _motorOpenPin
@@ -27,36 +29,41 @@ WaterMotorizedValve::WaterMotorizedValve(const uint8_t _valveMask
 		, const uint8_t _signalPinClosed /*= 0*/
 #endif
 	) :
+	Valve(_valveMask)
 #ifdef BOARD_V2
-	Valve(_valveMask, _portExtender)
-#else
-Valve(_valveMask)
+	, motorENPins(motorENPins)
+	, motorENCount(_motorENCount)
 #endif
-	, motorOpenPin(_motorOpenPin)
-	, motorClosePin(_motorClosePin)
+	, pwm0Pin(_motorOpenPin)
+	, pwm1Pin(_motorClosePin)
 #ifndef BOARD_V2
 	, signalPinOpen( _signalPinOpen)
 	, signalPinClosed( _signalPinClosed)
 #endif
 	, memAddress(_memAddress)
 	, valveTransitChrono(Chrono::MILLIS)
+	, selectedVolume(30)
 #ifndef BOARD_V2
 	, signalPin(0)
 	, initialSignalPin(LOW)
 	, signalPinChanged(false)
 #endif
 {
-#ifndef BOARD_V2
-	pinMode(motorOpenPin, OUTPUT); analogWrite(motorOpenPin, 0);
-	pinMode(motorClosePin, OUTPUT); analogWrite(motorClosePin, 0);
+}
+
+void WaterMotorizedValve::setup() {
+#ifdef BOARD_V2
+	for (int i = 0; i < motorENCount; i++)
+		portExtender.digitalWrite(motorENPins[i], LOW);
+#else
+	pinMode(pwm0Pin, OUTPUT); analogWrite(pwm0Pin, 0);
+	pinMode(pwm1Pin, OUTPUT); analogWrite(pwm1Pin, 0);
 	if (signalPinOpen > 0)
 		pinMode(signalPinOpen, INPUT_PULLUP);
 	if (signalPinClosed > 0)
 		pinMode(signalPinClosed, INPUT_PULLUP);
 #endif
-}
 
-void WaterMotorizedValve::setup() {
 	activeValves = EEPROMUtils::read(memAddress);
 	//Serial.print("Current state: "); Serial.println(currentState, HEX);
 
@@ -69,8 +76,6 @@ void WaterMotorizedValve::setup() {
 	state = activeValves != 0 ? State::Open : State::Closed;
 }
 
-
-WaterMotorizedValve::~WaterMotorizedValve() {}
 
 void WaterMotorizedValve::loop() {
 	switch (state) {
@@ -86,8 +91,13 @@ void WaterMotorizedValve::loop() {
 		}
 		else stop = true;
 		if (stop) {
-			analogWrite(motorOpenPin, 0);
-			analogWrite(motorClosePin, 0);
+#ifdef BOARD_V2
+			for (int i = 0; i < motorENCount; i++)
+				portExtender.digitalWrite(motorENPins[i], LOW);
+#endif
+			analogWrite(pwm0Pin, 0);
+			analogWrite(pwm1Pin, 0);
+
 			switch (state) {
 			case State::Opening:
 				setValvePosition(State::Open);
@@ -107,20 +117,29 @@ void WaterMotorizedValve::processValve(State position
 		, int _signalPin
 #endif
 	) {
+
 	int activePin = 0;
 
 #ifndef BOARD_V2
 	signalPin = _signalPin;
 #endif
+
+#ifdef BOARD_V2
+	for (int i = 0; i < motorENCount; i++) {
+		if (((i << i) & activeValves) != 0)
+			portExtender.digitalWrite(motorENPins[i], HIGH);
+	}
+#endif
+
 	switch (position) {
 	case State::Open:
-		activePin = motorOpenPin;
-		analogWrite(motorClosePin, 0);
+		activePin = pwm0Pin;
+		analogWrite(pwm1Pin, 0);
 		setValvePosition(State::Opening);
 		break;
 	case State::Closed:
-		activePin = motorClosePin;
-		analogWrite(motorOpenPin, 0);
+		activePin = pwm1Pin;
+		analogWrite(pwm0Pin, 0);
 		setValvePosition(State::Closing);
 		break;
 	}
@@ -193,4 +212,3 @@ boolean WaterMotorizedValve::isClosed() {
 #endif
 		return activeValves == 0;
 }
-

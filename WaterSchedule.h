@@ -9,9 +9,6 @@
 #define WATERSCHEDULE_H_
 
 #include <Arduino.h>
-#include <RTClib.h>
-#include "RainSensor.h"
-#include "WaterFlowMeter.h"
 
 enum EventType { None, WaterOut, WaterIn };
 enum EventFlags {
@@ -130,10 +127,6 @@ class WaterSchedule {
 private:
 	const int memAddr;
 
-	RTC_DS3231& rtc;
-	RainSensor& rainSensor;
-	WaterFlowMeter& waterFlowMeter;
-
 	DateTime now;
 	ShcheduleHeader header;
 	ScheduleEvent currentEvent;
@@ -141,15 +134,14 @@ private:
 	ScheduleEvent DefaultEvents[EVENTS_SIZE];
 
 public:
-	WaterSchedule(const int _memAddr, RTC_DS3231& _rtc, RainSensor& _rainSensor, WaterFlowMeter& _waterFlowMeter);
-	virtual ~WaterSchedule();
+	WaterSchedule(const int _memAddr);
 
 	void setup();
 	boolean scanEvents(int temperature);
 
 	ShcheduleHeader getHeader() const { return header; }
 	ScheduleEvent& getCurrentEvent() { return currentEvent; }
-	void setCurrentEvent(const ScheduleEvent& event) { currentEvent = event; }
+	void setCurrentEvent(const ScheduleEvent& event);
 
 	boolean isEventAppropriate(const ScheduleEvent& event, int temperature);
 	void dismissCurrentEvent();
@@ -158,5 +150,8 @@ public:
 	boolean checkEventSecondaryConditions(const ScheduleEvent& event, int temperature);
 	uint32_t getTodayMaxPouring(uint8_t valveFlags = 0xFF, int temperature = 100);
 };
+
+// Scheduler
+extern WaterSchedule schedule;
 
 #endif /* WATERSCHEDULE_H_ */

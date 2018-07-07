@@ -9,19 +9,8 @@
 #define ROBOTDISPLAY_H_
 
 #include <Arduino.h>
-#include <LiquidCrystal_I2C.h>
-#include <RTClib.h>
 #include <Chrono.h>
-
-#include "WaterMotorizedValve.h"
-#include "WaterInValve.h"
-#include "WaterLevelMeter.h"
-#include "KeyboardWithISR.h"
-#include "WaterFlowMeter.h"
-#include "RainSensor.h"
-#include "RainCoverHandler.h"
-#include "BatteryMonitor.h"
-#include "DS3232RTC.h"
+#include <RTClib.h>
 
 const int LCD_COLS = 16;
 const int LCD_ROWS = 4;
@@ -38,25 +27,12 @@ protected:
 	State currentState;
 	boolean backlightOn;
 
-	LiquidCrystal_I2C& lcd;
-	RTC_DS3231& rtc;
-	DS3232RTC& rtcDS3232;
-
-	WaterLevelMeter& waterLevelMeter;
-	WaterMotorizedValve& waterOutValve;
-	WaterInValve& waterInValve;
-	WaterFlowMeter& waterFlowMeter;
-	RainSensor& rainSensor;
-	RainCoverHandler& rainCoverHandler;
-	BatteryMonitor& batteryMonitor;
+	boolean innerMenuState;
 
 	void printNumber(unsigned long n, uint8_t base);
 
 public:
-	RobotDisplay(LiquidCrystal_I2C& _lcd, RTC_DS3231& _rtc, WaterLevelMeter& _waterLevelMeter
-			, WaterMotorizedValve& _waterOutValve, WaterInValve& _waterInValve, WaterFlowMeter& _waterFlowMeter
-			, RainSensor& _rainSensor, RainCoverHandler& _rainCoverHandler, BatteryMonitor& _batteryMonitor, DS3232RTC& _rtcDS3232);
-	virtual ~RobotDisplay();
+	RobotDisplay();
 
 	void initialize();
 	void turnOnBacklight();
@@ -66,13 +42,16 @@ public:
 
 	State getState() { return currentState; }
 	void setState(State newState);
-	RobotDisplay::State switchNextState();
-	RobotDisplay::State switchPrevState();
 
 	void update(DateTime& now);
 
 	void print(String str, int line = 0);
 	void print(unsigned long n, int line = 0);
+
+	void setInnerMenuState(boolean state) { innerMenuState = state; }
+	boolean isInnerMenuState() { return innerMenuState; }
 };
+
+extern RobotDisplay display;
 
 #endif /* ROBOTDISPLAY_H_ */

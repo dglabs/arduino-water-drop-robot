@@ -20,13 +20,8 @@ class WaterInValve: public virtual Valve {
 protected:
 	const uint8_t valvePin;
 public:
-	WaterInValve(const uint8_t _valveMask
-#ifdef BOARD_V2
-		, PCF8574& _portExtender
-#endif
-		, const uint8_t _valvePin
-	);
-	virtual ~WaterInValve();
+	WaterInValve(const uint8_t _valveMask, const uint8_t _valvePin);
+	void setup();
 
 	virtual boolean openValve(const uint8_t _valvesMask = 0xFF, boolean manual = false);
 	virtual boolean closeValve();
@@ -36,5 +31,7 @@ public:
 
 	virtual State getState() { return isOpen() ? State::Open : State::Closed; }
 };
+
+extern WaterInValve waterInValve;
 
 #endif /* WATERINVALVE_H_ */

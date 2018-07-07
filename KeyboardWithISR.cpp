@@ -7,6 +7,8 @@
 
 #include "KeyboardWithISR.h"
 #include <PinChangeInterrupt.h>
+#include "CommonDefs.h"
+#include "RobotDisplay.h"
 
 KeyboardWithISR* instance = NULL;
 
@@ -22,9 +24,9 @@ KeyboardWithISR::KeyboardWithISR(uint8_t _pinCLK, uint8_t _pinDT, uint8_t _pinSW
 		, curPos(0)
 		, pressed(false)
 		, rotated(false)
-		, rotating(true)
+		, increment(0)
 		, pressChrono(Chrono::MILLIS)
-		, pressedChrono(Chrono::MILLIS)
+		, lastPressedChrono(Chrono::MILLIS)
 		, rotatedChrono(Chrono::MILLIS)
 {
 	instance = this;
@@ -37,7 +39,7 @@ KeyboardWithISR::KeyboardWithISR(uint8_t _pinCLK, uint8_t _pinDT, uint8_t _pinSW
 	digitalWrite(pinSW, HIGH);       // turn on pull-up resistor
 	pressChrono.stop();
 	rotatedChrono.restart();
-	pressedChrono.restart();
+	lastPressedChrono.restart();
 
 	/*if (pinCLK == 2 || pinCLK == 3)
 		attachInterrupt(digitalPinToInterrupt(pinCLK), clk_ISR, CHANGE);
@@ -45,104 +47,95 @@ KeyboardWithISR::KeyboardWithISR(uint8_t _pinCLK, uint8_t _pinDT, uint8_t _pinSW
 		attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(pinCLK), clk_ISR, CHANGE);*/
 
 	attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(pinDT), dt_ISR, CHANGE);
-	attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(pinSW), press_ISR, CHANGE);
+	attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(pinSW), press_ISR, LOW);
 }
 
 void KeyboardWithISR::checkPressed() {
 	boolean p = digitalRead(instance->pinSW) == LOW;
-	pressed = p;
-
-	/*if (p) {
-		if (!pressed && pressedChrono.elapsed() > 100) {
-			if (pressChrono.isRunning()) {
-				if (pressChrono.elapsed() > 100) {
+	if (p) {
+		if (pressChrono.isRunning())
+		{
+			if (pressChrono.elapsed() > 50) {
+				if (lastPressedChrono.elapsed() > 500) {
 					pressed = true;
-					pressChrono.stop();
-					pressedChrono.restart();
+					lastPressedChrono.restart();
 				}
+				pressChrono.stop();
 			}
-			else { pressChrono.restart(); }
 		}
-		else pressChrono.stop();
+		else if (!pressed) instance->pressChrono.restart();
 	}
-	else {
-		pressChrono.stop();
-	}*/
+	else instance->pressChrono.stop();
 }
 
 void press_ISR() {
 	instance->checkPressed();
 }
 
-void clk_ISR() {
-	if (!instance->rotated && instance->rotatedChrono.elapsed() > 50) {
+/*void clk_ISR() {
+	if (instance->rotatedChrono.elapsed() > 50) {
 		int increment = 0;
 		if (digitalRead(instance->pinCLK) == HIGH) {   // found a low-to-high on channel A
 			if (digitalRead(instance->pinDT) == LOW) {  // check channel B to see which way
 			  // encoder is turning
-			  increment = -1;         // CCW
+				increment = -1;         // CCW
 			}
 			else {
-			  increment = 1;         // CW
+				increment = 1;         // CW
 			}
 		}
 		else                                        // found a high-to-low on channel A
 		{
 			if (digitalRead(instance->pinDT) == LOW) {   // check channel B to see which way
 			  // encoder is turning
-			  increment = -1;          // CW
+				increment = -1;          // CW
 			}
 			else {
-			  increment = 1;          // CCW
+				increment = 1;          // CCW
 			}
 		}
-		instance->curPos += increment;
+		instance->curPos += instance->increment;
 		instance->curPos = instance->curPos < 0 ? instance->maxPos - 1 : instance->curPos % instance->maxPos;
+		instance->increment = increment;
 
-		instance->rotating = false;
-		instance->rotated = true;
+		instance->rotated = increment != 0;
 		instance->rotatedChrono.restart();
 	}
-}
+}*/
 
 void dt_ISR() {
-	if (!instance->rotated && instance->rotatedChrono.elapsed() > 50) {
+	if (/*!instance->rotated && */instance->rotatedChrono.elapsed() > 50) {
 		int increment = 0;
 		if (digitalRead(instance->pinDT) == HIGH) {   // found a low-to-high on channel A
 			if (digitalRead(instance->pinCLK) == LOW) {  // check channel B to see which way
 			  // encoder is turning
-			  increment = -1;         // CCW
+				increment = -1;         // CCW
 			}
 			else {
-			  increment = 1;         // CW
+				increment = 1;         // CW
 			}
 		}
 		else                                        // found a high-to-low on channel A
 		{
 			if (digitalRead(instance->pinCLK) == LOW) {   // check channel B to see which way
 			  // encoder is turning
-			  increment = -1;          // CW
+				increment = -1;          // CW
 			}
 			else {
-			  increment = 1;          // CCW
+				increment = 1;          // CCW
 			}
 		}
 		instance->curPos += increment;
 		instance->curPos = instance->curPos < 0 ? instance->maxPos - 1 : instance->curPos % instance->maxPos;
+		instance->increment = increment;
 
-		instance->rotating = false;
 		instance->rotated = true;
 		instance->rotatedChrono.restart();
 	}
 }
 
 KeyboardWithISR::~KeyboardWithISR() {
-	detachInterrupt(digitalPinToInterrupt(pinSW));
+	detachPinChangeInterrupt(digitalPinToPinChangeInterrupt(pinDT));
+	detachPinChangeInterrupt(digitalPinToPinChangeInterrupt(pinSW));
 	instance = NULL;
 }
-
-void KeyboardWithISR::tick() {
-	rotating = true;
-	checkPressed();
-}
-

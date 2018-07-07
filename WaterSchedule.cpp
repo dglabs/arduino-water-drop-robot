@@ -5,15 +5,13 @@
  *      Author: dennis
  */
 
+#include "WaterDropRobot.h"
 #include <RTClib.h>
 #include "WaterSchedule.h"
 #include "EEPROMUtils.h"
 
-WaterSchedule::WaterSchedule(const int _memAddr, RTC_DS3231& _rtc, RainSensor& _rainSensor, WaterFlowMeter& _waterFlowMeter):
+WaterSchedule::WaterSchedule(const int _memAddr):
 	memAddr(_memAddr)
-	, rtc(_rtc)
-	, rainSensor(_rainSensor)
-	, waterFlowMeter(_waterFlowMeter)
 	, header(DateTime(2018, 04, 01, 0, 0, 0)	// April 1st start time
 			, DateTime(2018, 11, 01, 0, 0, 0)	// November 1st stop time
 			, 5 // 5C minimal operating temperature
@@ -50,10 +48,6 @@ void WaterSchedule::setup() {
 		header = bufHeader;
 		EEPROMUtils::read_bytes(memAddr + sizeof(ShcheduleHeader), (uint8_t*)&DefaultEvents, header.numRecords * sizeof(ScheduleEvent));
 	}
-}
-
-WaterSchedule::~WaterSchedule() {
-	// TODO Auto-generated destructor stub
 }
 
 void printDateTime(String title, DateTime& dt);
@@ -179,7 +173,15 @@ uint32_t WaterSchedule::getTodayMaxPouring(uint8_t valveFlags, int temperature) 
 	return result;
 }
 
+void WaterSchedule::setCurrentEvent(const ScheduleEvent& event) {
+	if (currentEvent.type != EventType::None) dismissCurrentEvent();
+	currentEvent = event;
+}
+
 void WaterSchedule::dismissCurrentEvent() {
+	if (waterInValve.isOpen()) waterInValve.closeValve();
+	if (waterOutValve.isOpen()) waterOutValve.closeValve();
+
 	if (currentEvent.id != NO_ID) {
 		for (int i = 0; i < header.numRecords && DefaultEvents[i].type != EventType::None; i++) {
 			if (currentEvent.id == DefaultEvents[i].id) {
@@ -190,5 +192,6 @@ void WaterSchedule::dismissCurrentEvent() {
 			}
 		}
 	}
+	// TODO: log completed event
 	currentEvent.type = EventType::None;
 }

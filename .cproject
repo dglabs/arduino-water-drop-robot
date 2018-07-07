@@ -29,13 +29,10 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Wire}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Wire/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Low-Power}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/AT24C1024-master}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/PinChangeInterrupt}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/PinChangeInterrupt/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Adafruit_Unified_Sensor}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/SPI}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/SPI/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Adafruit_BMP280_Library}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Grove_-_Barometer_Sensor_BME280}&quot;"/>
 								</option>
 								<inputType id="io.sloeber.compiler.cpp.sketch.input.976180371" name="CPP source files" superClass="io.sloeber.compiler.cpp.sketch.input"/>
@@ -52,13 +49,10 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Wire}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Wire/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Low-Power}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/AT24C1024-master}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/PinChangeInterrupt}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/PinChangeInterrupt/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Adafruit_Unified_Sensor}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/SPI}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/SPI/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Adafruit_BMP280_Library}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Grove_-_Barometer_Sensor_BME280}&quot;"/>
 								</option>
 								<inputType id="io.sloeber.compiler.c.sketch.input.1357423916" name="C Source Files" superClass="io.sloeber.compiler.c.sketch.input"/>
@@ -75,13 +69,10 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Wire}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Wire/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Low-Power}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/AT24C1024-master}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/PinChangeInterrupt}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/PinChangeInterrupt/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Adafruit_Unified_Sensor}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/SPI}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/SPI/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Adafruit_BMP280_Library}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Grove_-_Barometer_Sensor_BME280}&quot;"/>
 								</option>
 								<inputType id="io.sloeber.compiler.S.sketch.input.732030978" name="Assembly source files" superClass="io.sloeber.compiler.S.sketch.input"/>

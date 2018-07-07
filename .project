@@ -42,11 +42,6 @@
 			<locationURI>ECLIPSE_HOME/arduinoPlugin/packages/arduino/hardware/avr/1.6.20/variants/eightanaloginputs</locationURI>
 		</link>
 		<link>
-			<name>libraries/AT24C1024-master</name>
-			<type>2</type>
-			<location>/home/dennis/Arduino/libraries/AT24C1024-master</location>
-		</link>
-		<link>
 			<name>libraries/Chrono</name>
 			<type>2</type>
 			<location>/home/dennis/Arduino/libraries/Chrono</location>

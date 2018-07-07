@@ -13,52 +13,16 @@
 //const DateTime waterOutTime(2017, 06, 10, 21, 0, 0);
 //const DateTime waterInTime(2017, 06, 10, 10, 0, 0);
 
-RobotController::RobotController(const uint8_t _mainPowerPin
-		, uint8_t _wifi3VPowerPin
-		, RTC_DS3231& _rtc
-		, KeyboardWithISR& _keyboard
-		, WaterLevelMeter& _waterLevelMeter
-		, WaterMotorizedValve& _waterOutValve
-		, WaterInValve& _waterInValve
-		, RobotDisplay& _display
-		, WaterFlowMeter& _waterFlowMeter
-		, RainSensor& _rainSensor
-		, RainCoverHandler& _rainCoverHandler
-		, WaterSchedule& _schedule
-		, BatteryMonitor& _batteryMonitor
-#ifdef BOARD_V2
-		, PCF8574& _portExtender
-#endif
-		, DS3232RTC& _rtcDS3232
-		, WeatherManager& _weatherManager) :
+RobotController::RobotController(const uint8_t _mainPowerPin, uint8_t _wifi3VPowerPin) :
 
 		AbstractController( _mainPowerPin
-			, _wifi3VPowerPin
-			, _rtc
-			, _keyboard
-			, _waterLevelMeter
-			, _waterOutValve
-			, _waterInValve
-			, _display
-			, _waterFlowMeter
-			, _rainSensor
-			, _rainCoverHandler
-			, _schedule
-			, _batteryMonitor
-#ifdef BOARD_V2
-			, _portExtender
-#endif
-			, _rtcDS3232
-			, _weatherManager)
+			, _wifi3VPowerPin)
 
 		, currentState(RobotState::Active)
 		, activeStateChrono(Chrono::SECONDS)
 		, powerSaveCyclesCount(0)
 		, temperature(20)
 {
-}
-
-RobotController::~RobotController() {
 }
 
 void RobotController::setCurrentState(RobotState _state) {
@@ -99,7 +63,7 @@ boolean RobotController::processScheduleEvent() {
 			}
 			else { display.print("HIGH WATER LEVEL", 1); schedule.dismissCurrentEvent(); delay(1000);  }
 		}
-		else if (waterInValve.isOpen()) {
+		else {
 	    	if (waterLevelMeter.readLevel() >= schedule.getCurrentEvent().maxLevel ||
 	    			waterInValve.valveOpenSeconds() > schedule.getCurrentEvent().duration) {
 	    		waterInValve.closeValve();
@@ -109,7 +73,6 @@ boolean RobotController::processScheduleEvent() {
 	    	}
 	    	return true;
 		}
-		else return false;
 	} break;
 	case EventType::WaterOut: {
 		if (waterOutValve.isClosed()) {
@@ -121,7 +84,7 @@ boolean RobotController::processScheduleEvent() {
 			}
 			else { display.print("LOW WATER LEVEL", 1); schedule.dismissCurrentEvent(); delay(1000); return false; }
 		}
-		else if (waterOutValve.isOpen()) {
+		else {
 			boolean startWaterInAfter = false;
 			if (waterLevelMeter.readLevel() <= schedule.getCurrentEvent().minLevel ||
 					waterOutValve.valveOpenSeconds() > schedule.getCurrentEvent().duration ||
@@ -142,7 +105,6 @@ boolean RobotController::processScheduleEvent() {
 			}
 			else return true;	// Continue water pouring
 		}
-		else return false;
 	} break;
 	}
 
@@ -236,14 +198,19 @@ LOOP:
 	} break;
 	case Active: {
 		now = rtc.now();
-		keyboard.tick();
 
 		boolean anyActivity = false;
 	    if (keyboard.isRotated()) {	// Wake up from power down
 	    	anyActivity = true;
 	    	if (!display.isPowerSaveMode()) // Skip display state change if display is on power save mode
 	    	{
-	    		display.setState((RobotDisplay::State)keyboard.getPos());
+	    		if (display.getState() == RobotDisplay::OutValve && display.isInnerMenuState()) {
+	    			int increment = keyboard.getIncrement();
+	    			if (increment > 0) waterOutValve.incSelectedVolume();
+	    			else if (increment < 0) waterOutValve.decSelectedVolume();
+	    			display.update(now);
+	    		}
+	    		else display.setState((RobotDisplay::State)keyboard.getPos());
 	    	}
 	    }
 	    else if (keyboard.isPressed()) {
@@ -256,8 +223,16 @@ LOOP:
 	    			schedule.dismissCurrentEvent();
 	    		}
 	    		else {
-	    			schedule.setCurrentEvent(ScheduleEvent(NO_ID, EventType::WaterOut, now, MAX_OUT_VALVE_OPEN_TIME_SECONDS /*duration*/, 60 /*liters*/, 5 /*minTemperature*/
-	    					, 10 /*minLevel*/, 100 /*maxLevel*/, EventFlags::Active));
+	    			if (!display.isInnerMenuState()) {
+	    				display.setInnerMenuState(true);
+	    			}
+	    			else {
+	    	    		display.setInnerMenuState(false);
+	        			schedule.setCurrentEvent(ScheduleEvent(NO_ID, EventType::WaterOut, now, MAX_OUT_VALVE_OPEN_TIME_SECONDS /*duration*/
+	        					, waterOutValve.getSelectedVolume() /*liters*/, 5 /*minTemperature*/
+	        					, 10 /*minLevel*/, 100 /*maxLevel*/, EventFlags::Active));
+	    			}
+				    display.update(now);
    				}
 	    	} break;
 	    	case RobotDisplay::InValve: {
@@ -275,8 +250,7 @@ LOOP:
 			    display.update(now);
 	    	} break;
 	    	default: {
-	    		anyActivity = waterOutValve.isOpen() || waterInValve.isOpen();
-	    		if (!anyActivity) {
+	    		if (!isBackgroundActivity()) {
 	    			setCurrentState(PowerSave);
 	    			goto LOOP;
 	    		}

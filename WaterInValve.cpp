@@ -7,44 +7,43 @@
 
 
 #include "WaterInValve.h"
+#include "WaterDropRobot.h"
 
-WaterInValve::WaterInValve(const uint8_t _valveMask
-#ifdef BOARD_V2
-		, PCF8574& _portExtender
-#endif
-		, const uint8_t _valvePin
-) :
-#ifdef BOARD_V2
-	Valve(_valveMask, _portExtender)
-#else
+WaterInValve::WaterInValve(const uint8_t _valveMask, const uint8_t _valvePin) :
 	Valve(_valveMask)
-#endif
 	, valvePin(_valvePin)
 {
 	closeValveChrono.restart();
 	openValveChrono.stop();
-
-	pinMode(valvePin, OUTPUT);
-	digitalWrite(valvePin, LOW);
 	setValvePosition(State::Closed);
 }
 
-WaterInValve::~WaterInValve() {
+void WaterInValve::setup() {
+#ifdef BOARD_V2
+	portExtender.digitalWrite(valvePin, LOW);
+#else
+	pinMode(valvePin, OUTPUT);
 	digitalWrite(valvePin, LOW);
+#endif
 }
 
 boolean WaterInValve::openValve(const uint8_t _valveMask /*= 0xFF*/, boolean manual /*= false*/) {
 	Valve::openValve(_valveMask, manual);
-	pinMode(valvePin, OUTPUT);
+#ifdef BOARD_V2
+	portExtender.digitalWrite(valvePin, HIGH);
+#else
 	digitalWrite(valvePin, HIGH);
+#endif
 	return setValvePosition(State::Open);
 }
 
 boolean WaterInValve::closeValve() {
-	pinMode(valvePin, OUTPUT);
+#ifdef BOARD_V2
+	portExtender.digitalWrite(valvePin, LOW);
+#else
 	digitalWrite(valvePin, LOW);
+#endif
 	return setValvePosition(State::Closed);
 }
-
 
 

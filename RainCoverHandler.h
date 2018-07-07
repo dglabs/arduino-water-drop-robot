@@ -22,25 +22,22 @@ const unsigned long MAX_TIME_TO_OPEN_COVER_SEC = 120;
 
 class RainCoverHandler: public virtual Valve {
 private:
-	const uint8_t motorOpenPin;
-	const uint8_t motorClosePin;
+	const uint8_t pwm0Pin;
+	const uint8_t pwm1Pin;
+	const uint8_t motorENPin;
 	const uint8_t tiltSensorPin;
 	const int memAddress;
-
 
 	unsigned long timeToOpenCover;
 	Chrono operationChrono;
 
 public:
 	RainCoverHandler(const uint8_t _valveMask
-#ifdef BOARD_V2
-		, PCF8574& _portExtender
-#endif
-		, const uint8_t _motorOpenPin
-		, const uint8_t _motorClosePin
+		, const uint8_t _pwm0Pin
+		, const uint8_t _pwm1Pin
+		, const uint8_t _motorENPin
 		, const uint8_t _tiltSensorPin
 		, int _memAddress);
-	virtual ~RainCoverHandler();
 
 	virtual void setup();
 	virtual void loop();
@@ -53,5 +50,7 @@ public:
 
 	virtual boolean isActive() { return state == State::Opening || state == State::Closing; }
 };
+
+extern RainCoverHandler rainCoverHandler;
 
 #endif /* RAINCOVERHANDLER_H_ */

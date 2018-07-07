@@ -4,10 +4,6 @@
 #include <Arduino.h>
 #include <Chrono.h>
 
-#ifdef BOARD_V2
-#include "PCF8574.h"
-#endif
-
 const boolean VALVE_OPEN = true;
 const boolean VALVE_CLOSED = false;
 
@@ -22,9 +18,6 @@ protected:
 	Chrono closeValveChrono;
 
 	const uint8_t valvesMask;
-#ifdef BOARD_V2
-	PCF8574& portExtender;
-#endif
 
 	uint8_t activeValves;
 	State state;
@@ -42,17 +35,10 @@ protected:
 		return false;
 	}
 public:
-	Valve(const uint8_t _valvesMask
-#ifdef BOARD_V2
-		, PCF8574& _portExtender
-#endif
-			) :
+	Valve(const uint8_t _valvesMask) :
 		openValveChrono(Chrono::SECONDS)
 		, closeValveChrono(Chrono::SECONDS)
 		, valvesMask(_valvesMask)
-#ifdef BOARD_V2
-		, portExtender(_portExtender)
-#endif
 		, activeValves(_valvesMask)
 		, state(State::Open)
 		, isOpenManually(false)

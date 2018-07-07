@@ -14,21 +14,19 @@
 
 class KeyboardWithISR  {
 public:
-	uint8_t pinSW;
 	uint8_t pinCLK;
 	uint8_t pinDT;
+	uint8_t pinSW;
 
 	uint8_t maxPos;
 	int curPos;
 	boolean pressed;
 	boolean rotated;
-	boolean rotating;
+	int increment;
 
 	Chrono pressChrono;
-	Chrono pressedChrono;
+	Chrono lastPressedChrono;
 	Chrono rotatedChrono;
-
-	void checkPressed();
 
 public:
 	KeyboardWithISR(uint8_t _pinCLK, uint8_t _pinDT, uint8_t _pinSW, uint8_t _maxPos);
@@ -37,11 +35,17 @@ public:
 	void setMaxPos(int _maxPos) { maxPos = _maxPos; curPos = 0; }
 	uint8_t getMaxPos() { return maxPos; }
 
+	void checkPressed();
 	boolean isPressed() { int p = pressed; pressed = false; return p; }
 	boolean isRotated() { int r = rotated; rotated = false; return r; }
-	int getPos() { return curPos; }
 
-	void tick();
+	int getIncrement() { int i = increment; increment = 0; return i; }
+	int getPos() { return curPos; }
+	void setPos(int pos) { curPos = pos; }
 };
+
+// Keyboard controls
+extern KeyboardWithISR keyboard;
+
 
 #endif /* KEYBOARDWITHISR_H_ */

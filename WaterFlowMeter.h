@@ -41,12 +41,10 @@ private:
 	const int memAddress;
 	unsigned long totalVolume;
 	Chrono startedChrono;
-
-	RTC_DS3231& rtc;
 	PourStatistics statistics;
 
 public:
-	WaterFlowMeter(const int _memAddress, RTC_DS3231& _rtc);
+	WaterFlowMeter(const int _memAddress);
 	virtual ~WaterFlowMeter();
 
 	void initStatistics();
@@ -61,5 +59,9 @@ public:
 
 	unsigned long getVolumePerMinute() const;
 };
+
+// Water flow volume meter
+extern WaterFlowMeter waterFlowMeter;
+
 
 #endif /* WATERFLOWMETER_H_ */

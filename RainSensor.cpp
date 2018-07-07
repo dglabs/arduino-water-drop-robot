@@ -6,17 +6,17 @@
  */
 
 #include "RainSensor.h"
+#include "WaterDropRobot.h"
 #include "EEPROMUtils.h"
 
 const char* INTENSITY_NAMES[] = {"No rain", "Mist", "Moderate", "Intense" };
 
-RainSensor::RainSensor(const uint8_t _pin, const int _memAddress, RTC_DS3231& _rtc):
+RainSensor::RainSensor(const uint8_t _pin, const int _memAddress):
 	pin(_pin)
 	, memAddress(_memAddress)
 	, lastIntensity(RainIntensity::none)
 	, maxIntensity(RainIntensity::none)
 	, rainStartedTime(0)
-	, rtc(_rtc)
 	, lastRainInfo()
 {
 	pinMode(pin, INPUT);
@@ -28,10 +28,6 @@ void RainSensor::setup() {
 		lastRainInfo = LastRainInfo();
 		EEPROMUtils::save_bytes(memAddress, (uint8_t *)&lastRainInfo, sizeof(LastRainInfo));
 	}
-}
-
-RainSensor::~RainSensor() {
-	// TODO Auto-generated destructor stub
 }
 
 RainIntensity RainSensor::valueToIntensity(int value) const {
@@ -86,4 +82,7 @@ void RainSensor::getLastRainInfo(LastRainInfo& info) const {
 	// Else provide last rain info
 	else info.copy(lastRainInfo);
 }
+
+unsigned long RainSensor::secondsFromRainStarted() const
+	{ return rainStartedTime > 0 ? rtc.now().unixtime() - rainStartedTime : 0; }
 

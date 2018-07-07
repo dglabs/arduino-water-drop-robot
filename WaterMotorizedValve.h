@@ -23,15 +23,20 @@ const int STORAGE_SIZE_WATER_VALVE = 1;
 
 class WaterMotorizedValve : public virtual Valve {
 protected:
-	const uint8_t& motorOpenPin;
-	const uint8_t& motorClosePin;
-#ifndef BOARD_V2
+	const uint8_t& pwm0Pin;
+	const uint8_t& pwm1Pin;
+#ifdef BOARD_V2
+	const uint8_t* motorENPins;
+	const uint8_t motorENCount;
+#else
 	const uint8_t& signalPinOpen;
 	const uint8_t& signalPinClosed;
 #endif
 	const int& memAddress;
 
 	Chrono valveTransitChrono;
+	int selectedVolume;
+
 #ifndef BOARD_V2
 	int signalPin;
 	boolean initialSignalPin;
@@ -47,7 +52,8 @@ protected:
 public:
 	WaterMotorizedValve(const uint8_t _valveMask
 #ifdef BOARD_V2
-		, PCF8574& _portExtender
+		, const uint8_t* _motorENPins
+		, const uint8_t _motorENCount
 #endif
 		, const int _memAddress
 		, const uint8_t _motorOpenPin
@@ -57,7 +63,6 @@ public:
 		, const uint8_t _signalPinClosed = 0
 #endif
 	);
-	virtual ~WaterMotorizedValve();
 
 	virtual void setup();
 	virtual void loop();
@@ -68,6 +73,11 @@ public:
 	virtual boolean isOpen();
 	virtual boolean isClosed();
 
+	int getSelectedVolume() { return selectedVolume; }
+	int incSelectedVolume() { if (selectedVolume < MAX_TANK_VOLUME) selectedVolume += 10; return selectedVolume; }
+	int decSelectedVolume() { if (selectedVolume > 10) selectedVolume -= 10; return selectedVolume; }
 };
+
+extern WaterMotorizedValve waterOutValve;
 
 #endif /* WATERMOTORIZEDVALVE_H_ */

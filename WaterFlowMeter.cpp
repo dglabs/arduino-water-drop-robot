@@ -8,6 +8,7 @@
 #include <Arduino.h>
 #include <RTClib.h>
 #include "WaterFlowMeter.h"
+#include "WaterDropRobot.h"
 #include "EEPROMUtils.h"
 
 volatile unsigned long flowCounter = 0;
@@ -19,9 +20,8 @@ void waterFlow_ISR() {
 	flowCounter++;
 }
 
-WaterFlowMeter::WaterFlowMeter(const int _memAddress, RTC_DS3231& _rtc):
+WaterFlowMeter::WaterFlowMeter(const int _memAddress):
 	memAddress(_memAddress)
-	, rtc(_rtc)
 	, startedChrono(Chrono::SECONDS)
 	, totalVolume(0)
 {

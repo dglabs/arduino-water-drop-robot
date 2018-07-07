@@ -21,4 +21,10 @@ public:
 	static unsigned long readULong(int addr);
 };
 
+void writeFlash(int deviceaddress, unsigned int eeaddress, uint8_t data);
+uint8_t readFlash(int deviceaddress, unsigned int eeaddress );
+
+void writeFlash(int deviceaddress, unsigned int eeaddress, uint8_t* data, uint16_t size);
+void readFlash(int deviceaddress, unsigned int eeaddress, uint8_t* data, uint16_t size);
+
 #endif /* EEPROMUTILS_H_ */
