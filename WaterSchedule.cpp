@@ -112,6 +112,7 @@ boolean WaterSchedule::checkEventSecondaryConditions(const ScheduleEvent& event,
 boolean WaterSchedule::isEventAppropriate(const ScheduleEvent& event, int temperature) {
 	boolean result = false;
 	if (event.type == EventType::None || (event.flags & EventFlags::Active) == 0) return false;
+	if (event.id == NO_ID) return true;
 
 	/*Serial.print("Event: "); Serial.println(event.type);
 	Serial.print("Temp: "); Serial.println(temperature);*/

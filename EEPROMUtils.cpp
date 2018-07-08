@@ -29,6 +29,16 @@ static void EEPROMUtils::read_bytes(int addr, uint8_t *raw, uint16_t size) {
 		raw[i] = EEPROM.read(addr + i);
 }
 
+static void EEPROMUtils::saveUInt(int addr, uint16_t& value) {
+	EEPROMUtils::save_bytes(addr, (uint8_t*)&value, sizeof(uint16_t));
+}
+
+static uint16_t EEPROMUtils::readUInt(int addr) {
+	uint16_t value;
+	EEPROMUtils::read_bytes(addr, (uint8_t*)&value, sizeof(uint16_t));
+	return value;
+}
+
 static void EEPROMUtils::saveULong(int addr, unsigned long& value) {
 	EEPROMUtils::save_bytes(addr, (uint8_t*)&value, sizeof(unsigned long));
 }

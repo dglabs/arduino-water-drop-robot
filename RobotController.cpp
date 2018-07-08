@@ -13,10 +13,17 @@
 //const DateTime waterOutTime(2017, 06, 10, 21, 0, 0);
 //const DateTime waterInTime(2017, 06, 10, 10, 0, 0);
 
-RobotController::RobotController(const uint8_t _mainPowerPin, uint8_t _wifi3VPowerPin) :
+RobotController::RobotController(const uint8_t _mainPowerPin
+#ifdef BOARD_V2
+		, uint8_t _wifi3VPowerPin
+#endif
+		) :
 
 		AbstractController( _mainPowerPin
-			, _wifi3VPowerPin)
+#ifdef BOARD_V2
+			, _wifi3VPowerPin
+#endif
+			)
 
 		, currentState(RobotState::Active)
 		, activeStateChrono(Chrono::SECONDS)
@@ -75,6 +82,8 @@ boolean RobotController::processScheduleEvent() {
 		}
 	} break;
 	case EventType::WaterOut: {
+		Serial.println("EventType::WaterOut");
+		Serial.print("Valve is"); Serial.println(waterOutValve.isClosed() ? "closed" : "open");
 		if (waterOutValve.isClosed()) {
 			if (waterLevelMeter.readLevel() >= schedule.getCurrentEvent().minLevel) {
 				waterFlowMeter.startWaterOut();
@@ -82,7 +91,7 @@ boolean RobotController::processScheduleEvent() {
 				display.setState(RobotDisplay::OutValve);
 				return true;
 			}
-			else { display.print("LOW WATER LEVEL", 1); schedule.dismissCurrentEvent(); delay(1000); return false; }
+			else { display.print("LOW WATER LEVEL", 1); schedule.dismissCurrentEvent(); delay(10000); return false; }
 		}
 		else {
 			boolean startWaterInAfter = false;
@@ -137,8 +146,7 @@ void RobotController::setup() {
 
 	temperature = rtcDS3232.temperature() / 4;
 	if (schedule.isInActiveDateRange(temperature)) {
-		waterOutValve.closeValve();
-		waterFlowMeter.startWaterOut();
+		if (waterOutValve.isOpen()) waterOutValve.closeValve();
 	}
 	else {
 		prepareWinterOperation();
@@ -217,7 +225,7 @@ LOOP:
 	    	anyActivity = false;
 	    	switch (display.getState()) {
 	    	case RobotDisplay::OutValve: {
-	    		if (waterOutValve.isOpen() && waterOutValve.valveOpenSeconds() > 5) {
+	    		if (waterOutValve.isOpen() /*&& waterOutValve.valveOpenSeconds() > 5*/) {
 	    			waterOutValve.closeValve();
 	    			waterFlowMeter.stopWaterOut();
 	    			schedule.dismissCurrentEvent();

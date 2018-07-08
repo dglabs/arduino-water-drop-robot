@@ -19,7 +19,9 @@ const long MAX_OUT_VALVE_OPEN_TIME_SECONDS = 600;
 const unsigned long VALVE_TRANSIT_SLOW_MILLIS = 500;
 const unsigned long VALVE_TRANSIT_TIMEOUT_MILLIS_MIN = 5000;
 const unsigned long VALVE_TRANSIT_TIMEOUT_MILLIS_MAX = 8000;
-const int STORAGE_SIZE_WATER_VALVE = 1;
+
+const uint8_t MOTORIZED_VALVE_SIGNATURE = 0xA6;
+const int STORAGE_SIZE_WATER_VALVE = sizeof(uint8_t) + sizeof(uint8_t);
 
 class WaterMotorizedValve : public virtual Valve {
 protected:
@@ -36,7 +38,6 @@ protected:
 
 	Chrono valveTransitChrono;
 	int selectedVolume;
-	unsigned long transitStartedMillis;
 
 #ifndef BOARD_V2
 	int signalPin;
@@ -44,7 +45,7 @@ protected:
 	boolean signalPinChanged;
 #endif
 
-	void processValve(State position
+	boolean processValve(State position
 #ifndef BOARD_V2
 			, int _signalPin
 #endif

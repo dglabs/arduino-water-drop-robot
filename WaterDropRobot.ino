@@ -85,9 +85,17 @@ WeatherManager weatherManager
 WaterSchedule schedule(SCHEDULE_EEPROM_ADDR);
 
 #ifdef TEST_MODE
-TestController controller = TestController(MAIN_POWER, WIFI_3V_POWER);
+TestController controller = TestController(MAIN_POWER
+#ifdef BOARD_V2
+		, WIFI_3V_POWER
+#endif
+);
 #else
-RobotController controller = RobotController(MAIN_POWER, WIFI_3V_POWER);
+RobotController controller = RobotController(MAIN_POWER
+#ifdef BOARD_V2
+		, WIFI_3V_POWER
+#endif
+		);
 #endif /*TEST_MODE*/
 
 void setup () {

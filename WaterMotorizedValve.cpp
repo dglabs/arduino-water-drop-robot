@@ -42,7 +42,6 @@ WaterMotorizedValve::WaterMotorizedValve(const uint8_t _valveMask
 #endif
 	, memAddress(_memAddress)
 	, valveTransitChrono(Chrono::MILLIS)
-	, transitStartedMillis(millis())
 	, selectedVolume(30)
 #ifndef BOARD_V2
 	, signalPin(0)
@@ -65,14 +64,19 @@ void WaterMotorizedValve::setup() {
 		pinMode(signalPinClosed, INPUT_PULLUP);
 #endif
 
+	uint8_t signature = EEPROMUtils::read(memAddress + sizeof(uint8_t));
 	activeValves = EEPROMUtils::read(memAddress);
-	//Serial.print("Current state: "); Serial.println(currentState, HEX);
+	Serial.print(state); Serial.print(" "); Serial.println(activeValves, BIN);
+	Serial.println(signature, HEX);
 
-	if (activeValves != valvesMask && activeValves != 0) {
+	if (signature != MOTORIZED_VALVE_SIGNATURE) {
 		state = State::Open;
 		activeValves = valvesMask;
-		EEPROMUtils::save(memAddress, state);
+		EEPROMUtils::save(memAddress, activeValves);
+		signature = MOTORIZED_VALVE_SIGNATURE;
+		EEPROMUtils::save(memAddress + sizeof(uint8_t), signature);
 	}
+	Serial.print(state); Serial.print(" "); Serial.println(activeValves, BIN);
 
 	state = activeValves != 0 ? State::Open : State::Closed;
 }
@@ -80,48 +84,56 @@ void WaterMotorizedValve::setup() {
 
 void WaterMotorizedValve::loop() {
 	switch (state) {
-	case State::Opening: case State::Closing:
-		boolean stop = false;
-#ifdef BOARD_V2
-		stop = valveTransitChrono.elapsed() > VALVE_TRANSIT_TIMEOUT_MILLIS_MIN || (millis() - transitStartedMillis) > VALVE_TRANSIT_TIMEOUT_MILLIS_MIN;
-		delay(100);
-#else
-		if (valveTransitChrono.elapsed() < VALVE_TRANSIT_TIMEOUT_MILLIS_MAX) {
-			if (signalPin > 0) {
-				if (initialSignalPin != digitalRead(signalPin)) signalPinChanged = true;
-				if (valveTransitChrono.elapsed() > VALVE_TRANSIT_TIMEOUT_MILLIS_MIN /*&& signalPinChanged*/ && digitalRead(signalPin) == LOW) stop = true;
+	case State::Opening: case State::Closing: {
+			boolean stop = false;
+	#ifdef BOARD_V2
+			stop = valveTransitChrono.elapsed() > VALVE_TRANSIT_TIMEOUT_MILLIS_MIN || (millis() - transitStartedMillis) > VALVE_TRANSIT_TIMEOUT_MILLIS_MIN;
+			delay(100);
+	#else
+			//Serial.print("Transit elapsed: "); Serial.println(valveTransitChrono.elapsed());
+			if (valveTransitChrono.elapsed() < VALVE_TRANSIT_TIMEOUT_MILLIS_MAX) {
+				if (signalPin > 0) {
+					if (initialSignalPin != digitalRead(signalPin)) signalPinChanged = true;
+					if (valveTransitChrono.elapsed() > VALVE_TRANSIT_TIMEOUT_MILLIS_MIN /*&& signalPinChanged*/ && digitalRead(signalPin) == LOW) stop = true;
+				}
 			}
-		}
-		else stop = true;
-#endif
-		if (stop) {
-#ifdef BOARD_V2
-			for (int i = 0; i < motorENCount; i++)
-				portExtender.digitalWrite(motorENPins[i], LOW);
-#endif
-			analogWrite(pwm0Pin, 0);
-			analogWrite(pwm1Pin, 0);
+			else stop = true;
+	#endif
+			if (stop) {
+	#ifdef BOARD_V2
+				for (int i = 0; i < motorENCount; i++)
+					portExtender.digitalWrite(motorENPins[i], LOW);
+	#endif
+				analogWrite(pwm0Pin, 0);
+				analogWrite(pwm1Pin, 0);
 
-			valveTransitChrono.stop();
-			switch (state) {
-			case State::Opening:
-				setValvePosition(State::Open);
-				break;
-			case State::Closing: {
-				activeValves = 0;
-				EEPROMUtils::save(memAddress, activeValves);
-				setValvePosition(State::Closed);
-			} break;
-			}
-		} break;
+				//Serial.println("Stop valveTransitChrono");
+				valveTransitChrono.stop();
+				switch (state) {
+				case State::Opening:
+					setValvePosition(State::Open);
+					break;
+				case State::Closing: {
+					activeValves = 0;
+					EEPROMUtils::save(memAddress, activeValves);
+					setValvePosition(State::Closed);
+				} break;
+				}
+			} else delay(100);
+	} break;
+	case State::Open: case State::Closed:
+		valveTransitChrono.stop();
+		break;
 	}
 }
 
-void WaterMotorizedValve::processValve(State position
+boolean WaterMotorizedValve::processValve(State position
 #ifndef BOARD_V2
 		, int _signalPin
 #endif
 	) {
+
+	while (state == State::Opening || state == State::Closing) loop();
 
 	int activePin = 0;
 
@@ -152,12 +164,13 @@ void WaterMotorizedValve::processValve(State position
 	}
 	analogWrite(activePin, MOTOR_POWER_FULL);
 
+	//Serial.println("Restart valveTransitChrono");
 	valveTransitChrono.restart();
-	transitStartedMillis = millis();
 #ifndef BOARD_V2
 	initialSignalPin = (signalPin > 0) ?  digitalRead(signalPin) : HIGH;
 	signalPinChanged = false;
 #endif
+	return true;
 }
 
 boolean WaterMotorizedValve::openValve(const uint8_t _valvesMask /*= 0xFF*/, boolean manual /*= false*/) {
@@ -167,45 +180,44 @@ boolean WaterMotorizedValve::openValve(const uint8_t _valvesMask /*= 0xFF*/, boo
 	activeValves = _valvesMask;
 	EEPROMUtils::save(memAddress, activeValves);
 
-	processValve(State::Open
+	return processValve(State::Open
 #ifndef BOARD_V2
 			, signalPinOpen
 #endif
 	);
-
-	return true;
 }
 
 boolean WaterMotorizedValve::closeValve() {
 	if (activeValves == 0) return false;
 
-	processValve(State::Closed
+	return processValve(State::Closed
 #ifndef BOARD_V2
 			, signalPinClosed
 #endif
 	);
-	return true;
 }
 
 boolean WaterMotorizedValve::isOpen() {
-#ifndef BOARD_V2
+/*#ifndef BOARD_V2
 	if (signalPinOpen > 0)
 		if ((digitalRead(signalPinOpen) ^ digitalRead(signalPinClosed)))
 			return digitalRead(signalPinOpen) == LOW;
 		else return true;	// This is undefined state and treat it as open
 	else
-#endif
-		return activeValves != 0;
+#endif*/
+		Serial.print(state); Serial.print(" "); Serial.println(activeValves, BIN);
+		return state != State::Closed || activeValves != 0;
 }
 
 boolean WaterMotorizedValve::isClosed() {
-#ifndef BOARD_V2
+/*#ifndef BOARD_V2
 	if (signalPinClosed > 0) {
 		if ((digitalRead(signalPinOpen) ^ digitalRead(signalPinClosed)))
 			return digitalRead(signalPinClosed) == LOW;
 		else return false;	// This is undefined state and treat it as open
 	}
 	else
-#endif
-		return activeValves == 0;
+#endif*/
+		Serial.print(state); Serial.print(" "); Serial.println(activeValves, BIN);
+		return state == State::Closed && activeValves == 0;
 }

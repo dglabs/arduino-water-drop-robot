@@ -31,7 +31,11 @@ protected:
 	virtual void prepareWinterOperation();
 
 public:
-	RobotController(const uint8_t _mainPowerPin, uint8_t _wifi3VPowerPin);
+	RobotController(const uint8_t _mainPowerPin
+#ifdef BOARD_V2
+			, uint8_t _wifi3VPowerPin
+#endif
+	);
 
 	virtual void setup();
 

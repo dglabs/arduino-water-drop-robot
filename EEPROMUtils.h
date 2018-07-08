@@ -19,6 +19,9 @@ public:
 
 	static void saveULong(int addr, unsigned long& value);
 	static unsigned long readULong(int addr);
+
+	static void EEPROMUtils::saveUInt(int addr, uint16_t& value);
+	static uint16_t EEPROMUtils::readUInt(int addr);
 };
 
 void writeFlash(int deviceaddress, unsigned int eeaddress, uint8_t data);
