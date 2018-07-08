@@ -24,7 +24,9 @@ class RainCoverHandler: public virtual Valve {
 private:
 	const uint8_t pwm0Pin;
 	const uint8_t pwm1Pin;
+#ifdef BOARD_V2
 	const uint8_t motorENPin;
+#endif
 	const uint8_t tiltSensorPin;
 	const int memAddress;
 
@@ -35,7 +37,9 @@ public:
 	RainCoverHandler(const uint8_t _valveMask
 		, const uint8_t _pwm0Pin
 		, const uint8_t _pwm1Pin
+#ifdef BOARD_V2
 		, const uint8_t _motorENPin
+#endif
 		, const uint8_t _tiltSensorPin
 		, int _memAddress);
 

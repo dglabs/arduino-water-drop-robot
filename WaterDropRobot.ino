@@ -1,7 +1,9 @@
 
 #include "CommonDefs.h"
 
+#ifdef BOARD_V2
 #include "PCF8574.h"
+#endif
 
 #include "RobotController.h"
 #include "TestController.h"
@@ -13,7 +15,7 @@ DS3232RTC rtcDS3232(false);
 LiquidCrystal_I2C lcd(I2C_ADDR_LCD ,LCD_COLS, LCD_ROWS);
 
 #ifdef BOARD_V2
-PCF8574 portExtender(I2C_ADDR_PCF8574);
+PCF8574 portExtender;
 #endif
 
 // Water level meter
@@ -49,8 +51,14 @@ WaterMotorizedValve waterOutValve(VALVE_OUT0 | VALVE_OUT1 | VALVE_OUT2
 		, OUT_VALVES_SIZE
 #endif
 		, WTR_OUT_ADDR
+#ifdef BOARD_V2
 		, PIN_MOTOR_PWM0
-		, PIN_MOTOR_PWM1);
+		, PIN_MOTOR_PWM1
+#else
+		, WTR_OUT_OPEN
+		, WTR_OUT_CLOSE
+#endif
+);
 
 RainCoverHandler rainCoverHandler(VALVE_RAIN
 #ifdef BOARD_V2
@@ -59,17 +67,19 @@ RainCoverHandler rainCoverHandler(VALVE_RAIN
 		, EX_PIN_TILT
 #else
 		, COVER_MOTOR_POWER_PIN, COVER_MOTOR_DIRECTION_PIN
-		TILT_SENSOR_PIN
+		, TILT_SENSOR_PIN
 #endif
 		, COVER_STATE_ADDR);
 
 
-WeatherManager weatherManager(
+WeatherManager weatherManager
 #ifdef USE_BME280
+(
 		WIFI_3V_POWER
 		, LIGHT_SENSOR_PIN
+)
 #endif
-);
+;
 
 // Scheduler
 WaterSchedule schedule(SCHEDULE_EEPROM_ADDR);

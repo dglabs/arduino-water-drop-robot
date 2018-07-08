@@ -217,7 +217,7 @@ LOOP:
 	    	anyActivity = false;
 	    	switch (display.getState()) {
 	    	case RobotDisplay::OutValve: {
-	    		if (waterOutValve.isOpen() /*&& waterOutValve.valveOpenSeconds() > 5*/) {
+	    		if (waterOutValve.isOpen() && waterOutValve.valveOpenSeconds() > 5) {
 	    			waterOutValve.closeValve();
 	    			waterFlowMeter.stopWaterOut();
 	    			schedule.dismissCurrentEvent();
@@ -230,7 +230,7 @@ LOOP:
 	    	    		display.setInnerMenuState(false);
 	        			schedule.setCurrentEvent(ScheduleEvent(NO_ID, EventType::WaterOut, now, MAX_OUT_VALVE_OPEN_TIME_SECONDS /*duration*/
 	        					, waterOutValve.getSelectedVolume() /*liters*/, 5 /*minTemperature*/
-	        					, 10 /*minLevel*/, 100 /*maxLevel*/, EventFlags::Active));
+	        					, 0 /*minLevel*/, 100 /*maxLevel*/, EventFlags::Active));
 	    			}
 				    display.update(now);
    				}

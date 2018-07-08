@@ -22,7 +22,9 @@ const int TILT_SENSOR_CLOSED = HIGH;
 RainCoverHandler::RainCoverHandler(const uint8_t _valveMask
 		, const uint8_t _pwm0Pin
 		, const uint8_t _pwm1Pin
+#ifdef BOARD_V2
 		, const uint8_t _motorENPin
+#endif
 		, const uint8_t _tiltSensorPin
 		, int _memAddress) :
 #ifdef BOARD_V2
@@ -32,7 +34,9 @@ RainCoverHandler::RainCoverHandler(const uint8_t _valveMask
 #endif
 	, pwm0Pin(_pwm0Pin)
 	, pwm1Pin(_pwm1Pin)
+#ifdef BOARD_V2
 	, motorENPin(_motorENPin)
+#endif
 	, tiltSensorPin(_tiltSensorPin)
 	, memAddress(_memAddress)
 	, timeToOpenCover(0)
@@ -116,7 +120,9 @@ void RainCoverHandler::loop() {
 			delay(50);
 		}
 		else {
+#ifdef BOARD_V2
 			digitalWrite(motorENPin, LOW);
+#endif
 			analogWrite(pwm0Pin, 0);
 			analogWrite(pwm1Pin, 0);
 
@@ -140,7 +146,9 @@ void RainCoverHandler::loop() {
 			delay(50);
 		}
 		else {
+#ifdef BOARD_V2
 			digitalWrite(motorENPin, LOW);
+#endif
 			analogWrite(pwm0Pin, 0);
 			analogWrite(pwm1Pin, 0);
 			EEPROMUtils::save(memAddress, state);
@@ -156,7 +164,9 @@ boolean RainCoverHandler::openValve(const uint8_t _valveMask /*= 0xFF*/, boolean
 	operationChrono.restart();
 	analogWrite(pwm0Pin, MOTOR_POWER_FULL);
 	analogWrite(pwm1Pin, 0);
+#ifdef BOARD_V2
 	digitalWrite(motorENPin, HIGH);
+#endif
 
 	return setValvePosition(State::Opening);
 }
@@ -165,7 +175,9 @@ boolean  RainCoverHandler::closeValve() {
 	operationChrono.restart();
 	analogWrite(pwm0Pin, 0);
 	analogWrite(pwm1Pin, MOTOR_POWER_FULL);
+#ifdef BOARD_V2
 	digitalWrite(motorENPin, HIGH);
+#endif
 
 	return setValvePosition(State::Closing);
 }

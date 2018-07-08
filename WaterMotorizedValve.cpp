@@ -42,6 +42,7 @@ WaterMotorizedValve::WaterMotorizedValve(const uint8_t _valveMask
 #endif
 	, memAddress(_memAddress)
 	, valveTransitChrono(Chrono::MILLIS)
+	, transitStartedMillis(millis())
 	, selectedVolume(30)
 #ifndef BOARD_V2
 	, signalPin(0)
@@ -81,15 +82,18 @@ void WaterMotorizedValve::loop() {
 	switch (state) {
 	case State::Opening: case State::Closing:
 		boolean stop = false;
+#ifdef BOARD_V2
+		stop = valveTransitChrono.elapsed() > VALVE_TRANSIT_TIMEOUT_MILLIS_MIN || (millis() - transitStartedMillis) > VALVE_TRANSIT_TIMEOUT_MILLIS_MIN;
+		delay(100);
+#else
 		if (valveTransitChrono.elapsed() < VALVE_TRANSIT_TIMEOUT_MILLIS_MAX) {
-#ifndef BOARD_V2
 			if (signalPin > 0) {
 				if (initialSignalPin != digitalRead(signalPin)) signalPinChanged = true;
 				if (valveTransitChrono.elapsed() > VALVE_TRANSIT_TIMEOUT_MILLIS_MIN /*&& signalPinChanged*/ && digitalRead(signalPin) == LOW) stop = true;
 			}
-#endif
 		}
 		else stop = true;
+#endif
 		if (stop) {
 #ifdef BOARD_V2
 			for (int i = 0; i < motorENCount; i++)
@@ -98,6 +102,7 @@ void WaterMotorizedValve::loop() {
 			analogWrite(pwm0Pin, 0);
 			analogWrite(pwm1Pin, 0);
 
+			valveTransitChrono.stop();
 			switch (state) {
 			case State::Opening:
 				setValvePosition(State::Open);
@@ -128,6 +133,8 @@ void WaterMotorizedValve::processValve(State position
 	for (int i = 0; i < motorENCount; i++) {
 		if (((i << i) & activeValves) != 0)
 			portExtender.digitalWrite(motorENPins[i], HIGH);
+		else
+			portExtender.digitalWrite(motorENPins[i], LOW);
 	}
 #endif
 
@@ -145,22 +152,12 @@ void WaterMotorizedValve::processValve(State position
 	}
 	analogWrite(activePin, MOTOR_POWER_FULL);
 
-	valveTransitChrono.restart(0);
+	valveTransitChrono.restart();
+	transitStartedMillis = millis();
 #ifndef BOARD_V2
 	initialSignalPin = (signalPin > 0) ?  digitalRead(signalPin) : HIGH;
 	signalPinChanged = false;
 #endif
-
-	/*do {
-		delay(250);
-
-		if (signalPin > 0) {
-			//if (initialSignalPin != digitalRead(signalPin)) signalPinChanged = true;
-			if (valveTransitChrono.elapsed() > VALVE_TRANSIT_TIMEOUT_MILLIS_MIN && digitalRead(signalPin) == LOW) break;
-		}
-	} while (valveTransitChrono.elapsed() < VALVE_TRANSIT_TIMEOUT_MILLIS_MAX);
-	analogWrite(motorOpenPin, 0);
-	analogWrite(motorClosePin, 0);*/
 }
 
 boolean WaterMotorizedValve::openValve(const uint8_t _valvesMask /*= 0xFF*/, boolean manual /*= false*/) {

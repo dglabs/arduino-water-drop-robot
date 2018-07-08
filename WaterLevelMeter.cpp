@@ -35,7 +35,9 @@ void WaterLevelMeter::setup() {
 
 uint8_t WaterLevelMeter::readLevel() {
 #ifdef BOARD_V2
-	uint8_t mask = 0;
+	return 70;
+
+	/*uint8_t mask = 0;
 	for (int i = 0; i < LEVEL_SENSOR_COUNT; i++) {
 		mask = mask | (portExtender.digitalRead(levelPins[i]) == LOW ? 1 : 0 ) << i;
 	}
@@ -44,7 +46,7 @@ uint8_t WaterLevelMeter::readLevel() {
 	case 0b0110: return 70;
 	case 0b0100: return 30;
 	case 0b0000: return 0;
-	}
+	}*/
 
 #else
 	if (digitalRead(levelPins[BOTTOM_SENSOR]) == HIGH && digitalRead(levelPins[TOP_SENSOR]) == HIGH)	// Bottom sensor is disconnected(no water in tank)

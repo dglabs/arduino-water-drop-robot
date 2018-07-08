@@ -26,6 +26,8 @@ public:
 	virtual boolean openValve(const uint8_t _valvesMask = 0xFF, boolean manual = false);
 	virtual boolean closeValve();
 
+	virtual boolean isActive() { return isOpen(); }
+
 	virtual boolean isOpen() { return state == State::Open; };
 	virtual boolean isClosed() { return state == State::Closed; };
 

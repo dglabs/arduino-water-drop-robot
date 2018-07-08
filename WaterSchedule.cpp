@@ -71,6 +71,8 @@ boolean WaterSchedule::isInActiveDateRange(int temperature) {
 boolean WaterSchedule::checkEventSecondaryConditions(const ScheduleEvent& event, int temperature) {
 	boolean result = true;
 
+	if (event.id == NO_ID) return true;
+
 	if (temperature < event.minTemperature)
 		result = false;
 

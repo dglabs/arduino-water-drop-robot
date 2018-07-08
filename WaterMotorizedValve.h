@@ -36,6 +36,7 @@ protected:
 
 	Chrono valveTransitChrono;
 	int selectedVolume;
+	unsigned long transitStartedMillis;
 
 #ifndef BOARD_V2
 	int signalPin;
