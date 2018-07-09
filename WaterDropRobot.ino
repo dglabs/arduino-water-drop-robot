@@ -12,7 +12,7 @@
 RTC_DS3231 rtc;
 DS3232RTC rtcDS3232(false);
 
-LiquidCrystal_I2C lcd(I2C_ADDR_LCD ,LCD_COLS, LCD_ROWS);
+LiquidCrystal_I2C_16x4 lcd(I2C_ADDR_LCD ,LCD_COLS, LCD_ROWS);
 
 #ifdef BOARD_V2
 PCF8574 portExtender;
@@ -55,8 +55,8 @@ WaterMotorizedValve waterOutValve(VALVE_OUT0 | VALVE_OUT1 | VALVE_OUT2
 		, PIN_MOTOR_PWM0
 		, PIN_MOTOR_PWM1
 #else
-		, WTR_OUT_OPEN
-		, WTR_OUT_CLOSE
+		, WTR_OUT_PWM0
+		, WTR_OUT_PWM1
 #endif
 );
 

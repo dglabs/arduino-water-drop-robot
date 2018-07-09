@@ -25,7 +25,7 @@ void WaterLevelMeter::setup() {
 	// Pull-up all analog pins to detect disconnected wires
 	for (int i = 0; i < LEVEL_SENSOR_COUNT; i++) {
 #ifdef BOARD_V2
-		//portExtender.pinMode(levelPins[i], INPUT_PULLUP);           // input pin with pull-up resistor
+		portExtender.pinMode(levelPins[i], INPUT_PULLUP);           // input pin with pull-up resistor
 #else
 		pinMode(levelPins[i], INPUT);           // input pin with pull-up resistor
 		digitalWrite(levelPins[i], HIGH);
@@ -34,8 +34,8 @@ void WaterLevelMeter::setup() {
 }
 
 uint8_t WaterLevelMeter::readLevel() {
-	return 70;
-/*#ifdef BOARD_V2
+//	return 70;
+#ifdef BOARD_V2
 
 	uint8_t mask = 0;
 	for (int i = 0; i < LEVEL_SENSOR_COUNT; i++) {
@@ -56,6 +56,6 @@ uint8_t WaterLevelMeter::readLevel() {
 	else if (digitalRead(levelPins[BOTTOM_SENSOR]) == LOW && digitalRead(levelPins[TOP_SENSOR]) == LOW)	// Both sensors are up - full tank.
 		return 100;
 	else return 100; // Prevent water in if levels have undefined values
-#endif*/
+#endif
 }
 

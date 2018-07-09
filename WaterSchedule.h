@@ -132,23 +132,28 @@ private:
 	ScheduleEvent currentEvent;
 
 	ScheduleEvent DefaultEvents[EVENTS_SIZE];
+	Chrono lastScanTime;
+	Chrono lastCheckTime;
 
 public:
 	WaterSchedule(const int _memAddr);
 
 	void setup();
-	boolean scanEvents(int temperature);
+	boolean scanEvents();
 
 	ShcheduleHeader getHeader() const { return header; }
 	ScheduleEvent& getCurrentEvent() { return currentEvent; }
 	void setCurrentEvent(const ScheduleEvent& event);
 
-	boolean isEventAppropriate(const ScheduleEvent& event, int temperature);
+	boolean isEventAppropriate(const ScheduleEvent& event);
 	void dismissCurrentEvent();
-	boolean isInActiveDateRange(int temperature);
+	boolean isInActiveDateRange();
 
-	boolean checkEventSecondaryConditions(const ScheduleEvent& event, int temperature);
-	uint32_t getTodayMaxPouring(uint8_t valveFlags = 0xFF, int temperature = 100);
+	boolean checkEventSecondaryConditions(const ScheduleEvent& event);
+	uint32_t getTodayMaxPouring(uint8_t valveFlags = 0xFF);
+
+	int secondsFromLastScan() const { return lastScanTime.elapsed(); }
+	int secondsFromLastCheck() const { return lastCheckTime.elapsed(); }
 };
 
 // Scheduler

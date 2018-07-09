@@ -9,31 +9,39 @@
 #include <RTClib.h>
 #include "WaterSchedule.h"
 #include "EEPROMUtils.h"
+#include "RobotDisplay.h"
 
 WaterSchedule::WaterSchedule(const int _memAddr):
 	memAddr(_memAddr)
+	, lastScanTime(Chrono::SECONDS)
+	, lastCheckTime(Chrono::SECONDS)
 	, header(DateTime(2018, 04, 01, 0, 0, 0)	// April 1st start time
 			, DateTime(2018, 11, 01, 0, 0, 0)	// November 1st stop time
 			, 5 // 5C minimal operating temperature
 			, EVENTS_SIZE)
+	, currentEvent()
 
 	{
+		lastScanTime.restart();
+		lastCheckTime.restart();
+
 		// Default every day event
-		DefaultEvents[0] = ScheduleEvent(1, EventType::WaterOut, DateTime(2018, 06, 10, 20, 20, 0), 800 /*duration*/, 60 /*liters*/, 5 /*minTemperature*/
-				, 10 /*minLevel*/, 100 /*maxLevel*/, EventFlags::Active | EventFlags::SkipIfRecentRain, VALVE_OUT0 /*valves*/, 80 /*max humidity*/, 0 /*period flags*/, 1 /*repeat period days*/, 0 /*last action time*/);
+		DefaultEvents[0] = ScheduleEvent(1, EventType::WaterOut, DateTime(2018, 06, 10, 20, 30, 0), 1200 /*duration*/, 60 /*liters*/, 5 /*minTemperature*/
+				, 10 /*minLevel*/, 100 /*maxLevel*/, EventFlags::Active | EventFlags::SkipIfRecentRain, VALVE_OUT0 /*valves*/, 80 /*max humidity*/
+				, 0 /*period flags*/, 1 /*repeat period days*/, 0 /*last action time*/);
 		// Additional event when it's very hot
-		DefaultEvents[1] = ScheduleEvent(2, EventType::WaterOut, DateTime(2018, 06, 10, 13, 0, 0), 300 /*duration*/, 30 /*liters*/, 40 /*minTemperature*/
-				, 10 /*minLevel*/, 100 /*maxLevel*/, EventFlags::Active | EventFlags::SkipIfRecentRain, VALVE_OUT0, 60/*max humidity*/, 0 /*period flags*/, 1 /*repeat period days*/, 0 /*last action time*/);
+		DefaultEvents[1] = ScheduleEvent(2, EventType::WaterOut, DateTime(2018, 06, 10, 13, 0, 0), 300 /*duration*/, 30 /*liters*/, 35 /*minTemperature*/
+				, 10 /*minLevel*/, 100 /*maxLevel*/, EventFlags::Active | EventFlags::SkipIfRecentRain, VALVE_OUT0, 60/*max humidity*/
+				, 0 /*period flags*/, 1 /*repeat period days*/, 0 /*last action time*/);
 		// Additional backup event if it was raining
 		DefaultEvents[2] = ScheduleEvent(3, EventType::WaterOut, DateTime(2018, 06, 10, 22, 0, 0), 300 /*duration*/, 30 /*liters*/, 15 /*minTemperature*/
-				, 10 /*minLevel*/, 100 /*maxLevel*/, /*EventFlags::Active |*/ EventFlags::OnlyAfterRecentRain, VALVE_OUT0, 100/*max humidity*/, 0 /*period flags*/, 1 /*repeat period days*/, 0 /*last action time*/);
+				, 10 /*minLevel*/, 100 /*maxLevel*/, EventFlags::Active | EventFlags::OnlyAfterRecentRain, VALVE_OUT0, 100/*max humidity*/
+				, 0 /*period flags*/, 1 /*repeat period days*/, 0 /*last action time*/);
 		// Event to fill-in the tank
 		DefaultEvents[3] = ScheduleEvent(4, EventType::WaterIn, DateTime(2018, 06, 10, 10, 30, 0), 600 /*duration*/, 300 /*liters*/, 5 /*minTemperature*/
-				, 51 /*minLevel*/, 100 /*maxLevel*/, EventFlags::Active, VALVE_IN, 100/*max humidity*/, 0 /*period flags*/, 1 /*repeat period days*/, 0 /*last action time*/);
+				, 51 /*minLevel*/, 100 /*maxLevel*/, EventFlags::Active, VALVE_IN, 100/*max humidity*/, 0 /*period flags*/
+				, 1 /*repeat period days*/, 0 /*last action time*/);
 		DefaultEvents[4] = ScheduleEvent();
-
-		currentEvent = DefaultEvents[0];
-
 }
 
 void WaterSchedule::setup() {
@@ -52,8 +60,8 @@ void WaterSchedule::setup() {
 
 void printDateTime(String title, DateTime& dt);
 
-boolean WaterSchedule::isInActiveDateRange(int temperature) {
-	if (temperature < header.minTemperature) return false;
+boolean WaterSchedule::isInActiveDateRange() {
+	if (weatherManager.maxTemperature < header.minTemperature) return false;
 
 	DateTime bufDateStart(header.startDate);
 	DateTime bufDateEnd(header.stopDate);
@@ -68,13 +76,17 @@ boolean WaterSchedule::isInActiveDateRange(int temperature) {
 }
 
 
-boolean WaterSchedule::checkEventSecondaryConditions(const ScheduleEvent& event, int temperature) {
+boolean WaterSchedule::checkEventSecondaryConditions(const ScheduleEvent& event) {
 	boolean result = true;
 
 	if (event.id == NO_ID) return true;
 
-	if (temperature < event.minTemperature)
+	if (weatherManager.maxTemperature < event.minTemperature) {
+#ifdef _DEBUG
+		Serial.println(F("Temperature is too low. Skipping event"));
+#endif
 		result = false;
+	}
 
 	// Check recent rain flag
 	LastRainInfo rainInfo;
@@ -84,39 +96,66 @@ boolean WaterSchedule::checkEventSecondaryConditions(const ScheduleEvent& event,
 		DateTime lastRaintTime(rainInfo.startTime);
 		TimeSpan rainSpan = now - lastRaintTime;
 
-		if (rainSpan.days() <= 1 && rainInfo.enoughRainPoured() && (event.flags & EventFlags::SkipIfRecentRain) != 0)
+		if (rainSpan.days() <= 1 && rainInfo.enoughRainPoured() && (event.flags & EventFlags::SkipIfRecentRain) != 0) {
+#ifdef _DEBUG
+			Serial.println(F("Enough rain water already. Skipping event"));
+#endif
 			result = false;
+		}
 
-		if (!(rainSpan.days() <= 1 && rainInfo.enoughRainPoured()) && (event.flags & EventFlags::OnlyAfterRecentRain) != 0)
+		if (!(rainSpan.days() <= 1 && rainInfo.enoughRainPoured()) && (event.flags & EventFlags::OnlyAfterRecentRain) != 0) {
+#ifdef _DEBUG
+			Serial.println(F("No recent rain for this event. Skipping event"));
+#endif
 			result = false;
+		}
 	}
 
 	// Skip even if this is not in allowed period
 	if (event.lastActionTime > 0) {
 		DateTime lastActionTime(event.lastActionTime);
 		TimeSpan span = (lastActionTime - now) + TimeSpan(event.duration * 2);
+#ifdef _DEBUG
+		printDateTime("Event last action time: ", lastActionTime);
+		Serial.print(F("Hours passed: ")); Serial.println(span.hours());
+#endif
 
 		// Block already performed event for 12 hours
-		if (span.hours() < 12)
+		/*if (span.hours() < 12) {
+#ifdef _DEBUG
+			Serial.println(F("Less than 12 hours passed from prior event. Skipping event."));
+#endif
 			result = false;
+		}*/
 
 		if (event.repeatPeriodDays > 1) {
-			if (span.days() < event.repeatPeriodDays)
+			if (span.days() < event.repeatPeriodDays) {
+#ifdef _DEBUG
+			Serial.println(F("Not enough days passed from prior periodic event. Skipping event."));
+#endif
 				result = false;
+			}
 		}
 	}
 
+#ifdef _DEBUG
+	Serial.print(F("checkEventSecondaryConditions result = ")); Serial.println(result ? F("TRUE") : F("FALSE"));
+#endif
 	return result;
 }
 
-boolean WaterSchedule::isEventAppropriate(const ScheduleEvent& event, int temperature) {
+boolean WaterSchedule::isEventAppropriate(const ScheduleEvent& event) {
 	boolean result = false;
 	if (event.type == EventType::None || (event.flags & EventFlags::Active) == 0) return false;
 	if (event.id == NO_ID) return true;
 
-	/*Serial.print("Event: "); Serial.println(event.type);
-	Serial.print("Temp: "); Serial.println(temperature);*/
+	lastCheckTime.restart();
 
+#ifdef _DEBUG
+	Serial.print(F("Event type: ")); Serial.print(event.type);
+	Serial.print(F(" Event ID: ")); Serial.println(event.id);
+	Serial.print(F("Temperature : ")); Serial.println(weatherManager.maxTemperature);
+#endif
 	now = rtc.now();
 	DateTime eventTime(event.checkTime);
 	DateTime actionTime(now.year(), now.month(), now.day(), eventTime.hour(), eventTime.minute(), eventTime.second());
@@ -125,59 +164,93 @@ boolean WaterSchedule::isEventAppropriate(const ScheduleEvent& event, int temper
 		long eventSpan = now.secondstime() - actionTime.secondstime();
 
 		if (eventSpan < event.duration) {
-			result = checkEventSecondaryConditions(event, temperature);
+			result = checkEventSecondaryConditions(event);
 
 			// Skip event if enough water already poured today
 			if (result && event.type == EventType::WaterOut) {
-				uint32_t maxTodayLiters = getTodayMaxPouring(event.valves, temperature);
+				uint32_t maxTodayLiters = getTodayMaxPouring(event.valves);
 				uint32_t alreadyPoured = waterFlowMeter.getStatistics().today.litres;
 
-				/*if (alreadyPoured + (event.liters / 2) > maxTodayLiters)
-					result = false;*/
+#ifdef _DEBUG
+				Serial.print(F("maxTodayLiters: ")); Serial.println(maxTodayLiters);
+				Serial.print(F("alreadyPoured: ")); Serial.println(alreadyPoured);
+#endif
+				if (alreadyPoured + (event.liters / 2) > maxTodayLiters) {
+#ifdef _DEBUG
+					Serial.println(F("Enough water already poured today"));
+#endif
+					result = false;
+				}
 			}
 		}
 	}
 
-	//Serial.println(result ? "TRUE" : "FALSE");
+#ifdef _DEBUG
+	Serial.print(F("Event appropriate: ")); Serial.println(result ? F("TRUE") : F("FALSE"));
+#endif
 	return result;
 }
 
-boolean WaterSchedule::scanEvents(int temperature) {
-	if (!isInActiveDateRange(temperature)) return false;
+boolean WaterSchedule::scanEvents() {
+	lastScanTime.restart();
+#ifdef _DEBUG
+	Serial.println(F("scanEvents()"));
+#endif
+	if (!isInActiveDateRange()) {
+#ifdef _DEBUG
+		Serial.println(F("Out of active date range"));
+#endif
+		return false;
+	}
 
-	if (isEventAppropriate(currentEvent, temperature)) return true;
+	if (isEventAppropriate(currentEvent)) {
+#ifdef _DEBUG
+		Serial.println(F("Current event still appropriate"));
+		Serial.print(F("Event ID = ")); Serial.println(currentEvent.id);
+#endif
+		return true;
+	}
 
 	boolean result = false;
 	for (int i = 0; i < header.numRecords && result == false; i++) {
-		ScheduleEvent& event = DefaultEvents[i];
-		if (event.type == EventType::None) break;	// This is terminating event
-		if ((event.flags & EventFlags::Active) == 0) continue;
-		result = isEventAppropriate(event, temperature);
-		if (result) {
-			currentEvent = event; break;
+		if (DefaultEvents[i].type == EventType::None) break;	// This is terminating event
+#ifdef _DEBUG
+		Serial.print(F("Event ID = ")); Serial.println(DefaultEvents[i].id);
+#endif
+		if ((DefaultEvents[i].flags & EventFlags::Active) != 0) {
+			result = isEventAppropriate(DefaultEvents[i]);
+			if (result) {
+				currentEvent = DefaultEvents[i]; break;
+			}
 		}
 	}
 
-	if (!result) currentEvent.type = EventType::None;
+	if (!result) {
+#ifdef _DEBUG
+		Serial.println(F("No current event selected"));
+#endif
+		if (currentEvent.type != EventType::None) {
+			dismissCurrentEvent();
+		}
+	}
 	return result;
 }
 
-uint32_t WaterSchedule::getTodayMaxPouring(uint8_t valveFlags, int temperature) {
+uint32_t WaterSchedule::getTodayMaxPouring(uint8_t valveFlags) {
 	uint32_t result = 0;
-	now = rtc.now();
 	for (int i = 0; i < header.numRecords && DefaultEvents[i].type != EventType::None; i++) {
 		ScheduleEvent& event = DefaultEvents[i];
 		if (event.type == EventType::WaterOut && (event.flags & EventFlags::Active) != 0 && (event.valves & valveFlags) != 0) {
-			if (checkEventSecondaryConditions(event, temperature)) {
-				result += event.liters;
-			}
+			result += event.liters;
 		}
 	}
 	return result;
 }
 
 void WaterSchedule::setCurrentEvent(const ScheduleEvent& event) {
-	if (currentEvent.type != EventType::None) dismissCurrentEvent();
+	if (currentEvent.type != EventType::None) {
+		dismissCurrentEvent();
+	}
 	currentEvent = event;
 }
 
@@ -186,6 +259,10 @@ void WaterSchedule::dismissCurrentEvent() {
 	if (waterOutValve.isOpen()) waterOutValve.closeValve();
 
 	if (currentEvent.id != NO_ID) {
+#ifdef _DEBUG
+		Serial.println(F(">>> dismissCurrentEvent()"));
+		Serial.print(F("Event ID = ")); Serial.println(currentEvent.id);
+#endif
 		for (int i = 0; i < header.numRecords && DefaultEvents[i].type != EventType::None; i++) {
 			if (currentEvent.id == DefaultEvents[i].id) {
 				DateTime now = rtc.now();

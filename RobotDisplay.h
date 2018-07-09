@@ -11,11 +11,7 @@
 #include <Arduino.h>
 #include <Chrono.h>
 #include <RTClib.h>
-
-const int LCD_COLS = 16;
-const int LCD_ROWS = 4;
-
-// Date and time functions using a DS1307 RTC connected via I2C and Wire lib
+#include "CommonDefs.h"
 
 const long BACKLIGHT_TIME_SECONDS = 30;
 
@@ -51,6 +47,10 @@ public:
 	void setInnerMenuState(boolean state) { innerMenuState = state; }
 	boolean isInnerMenuState() { return innerMenuState; }
 };
+
+#ifdef _DEBUG
+void printDateTime(const char* title, DateTime& dt);
+#endif
 
 extern RobotDisplay display;
 

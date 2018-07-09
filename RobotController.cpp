@@ -56,19 +56,29 @@ void RobotController::setCurrentState(RobotState _state) {
 // Process the current schedule action if any and @return true if device should stay active
 boolean RobotController::processScheduleEvent() {
 	LOOP:
-	if (!schedule.isEventAppropriate(schedule.getCurrentEvent(), temperature)) {
-		schedule.dismissCurrentEvent(); return false;
+	if (schedule.getCurrentEvent().type == EventType::None) return false;
+
+	boolean eventAppropriate = schedule.secondsFromLastCheck() < 10 ||
+			schedule.isEventAppropriate(schedule.getCurrentEvent());
+	if (!eventAppropriate) {
+		schedule.dismissCurrentEvent();
+		return false;
 	}
+
 	switch (schedule.getCurrentEvent().type) {
 	case EventType::WaterIn: {
 		if (waterInValve.isClosed()) {
-			if (waterLevelMeter.readLevel() <= schedule.getCurrentEvent().minLevel &&
+			if (waterLevelMeter.readLevel() <= schedule.getCurrentEvent().maxLevel &&
 					waterInValve.valveCloseSeconds() > MIN_TIME_VAVLE_CLOSED_SECONDS) {
 				waterInValve.openValve();
 				display.setState(RobotDisplay::InValve);
 				return true;
 			}
-			else { display.print("HIGH WATER LEVEL", 1); schedule.dismissCurrentEvent(); delay(1000);  }
+			else {
+				display.print("HIGH WATER LEVEL", 1);
+				schedule.dismissCurrentEvent();
+				delay(1000);
+			}
 		}
 		else {
 	    	if (waterLevelMeter.readLevel() >= schedule.getCurrentEvent().maxLevel ||
@@ -82,8 +92,10 @@ boolean RobotController::processScheduleEvent() {
 		}
 	} break;
 	case EventType::WaterOut: {
-		Serial.println("EventType::WaterOut");
-		Serial.print("Valve is"); Serial.println(waterOutValve.isClosed() ? "closed" : "open");
+#ifdef _DEBUG
+		//Serial.println(F("EventType::WaterOut"));
+		//Serial.print(F("Valve is")); Serial.println(waterOutValve.isClosed() ? F("closed") : F("open"));
+#endif
 		if (waterOutValve.isClosed()) {
 			if (waterLevelMeter.readLevel() >= schedule.getCurrentEvent().minLevel) {
 				waterFlowMeter.startWaterOut();
@@ -91,9 +103,16 @@ boolean RobotController::processScheduleEvent() {
 				display.setState(RobotDisplay::OutValve);
 				return true;
 			}
-			else { display.print("LOW WATER LEVEL", 1); schedule.dismissCurrentEvent(); delay(10000); return false; }
+			else {
+#ifdef _DEBUG
+				Serial.println(F("Low water in tank. Closing valve."));
+#endif
+				display.print("LOW WATER LEVEL", 1);
+				schedule.dismissCurrentEvent(); delay(10000);
+				return false;
+			}
 		}
-		else {
+		else if (waterOutValve.isOpen()) {
 			boolean startWaterInAfter = false;
 			if (waterLevelMeter.readLevel() <= schedule.getCurrentEvent().minLevel ||
 					waterOutValve.valveOpenSeconds() > schedule.getCurrentEvent().duration ||
@@ -127,15 +146,20 @@ boolean RobotController::processScheduleEvent() {
 }
 
 boolean RobotController::checkSchedule() {
-	boolean result = schedule.scanEvents(temperature);
+	boolean result = schedule.scanEvents();
 	if (result) result = processScheduleEvent();
 	return result;
 }
 
 // Prepare system to winter operation
 void RobotController::prepareWinterOperation() {
-	if (!waterOutValve.isOpen())
+#ifdef _DEBUG
+		Serial.println(F("## Preparing to winter operation"));
+#endif
+	if (waterOutValve.isClosed()) {
 		waterOutValve.openValve();
+	}
+
 	waterInValve.closeValve();
 	if (rainCoverHandler.isOpen())
 		rainCoverHandler.closeValve();
@@ -144,8 +168,8 @@ void RobotController::prepareWinterOperation() {
 void RobotController::setup() {
 	AbstractController::setup();
 
-	temperature = rtcDS3232.temperature() / 4;
-	if (schedule.isInActiveDateRange(temperature)) {
+	weatherManager.update(true);
+	if (schedule.isInActiveDateRange()) {
 		if (waterOutValve.isOpen()) waterOutValve.closeValve();
 	}
 	else {
@@ -167,14 +191,17 @@ LOOP:
     			display.turnOffBacklight();
 	    		delay(5);
 	    		now = rtc.now();
-	    		temperature = rtcDS3232.temperature() / 4;
-	    		Serial.println(temperature);
+	    		weatherManager.update(1);
+	    		temperature = weatherManager.maxTemperature;
 	    		waterLevelMeter.readLevel();
 
-	    		if (schedule.isInActiveDateRange(temperature)) {
+	    		if (schedule.isInActiveDateRange()) {
 					if (!batteryMonitor.isPowerLow()) {
 						if (checkSchedule()) { setCurrentState(Active); goto LOOP; }
 						if (checkRainOut()) { setCurrentState(Active); display.setState(RobotDisplay::RainControl); goto LOOP; }
+#ifdef _DEBUG
+						delay(1000);
+#endif
 					}
 	    		}
 	    		else prepareWinterOperation();
@@ -267,6 +294,16 @@ LOOP:
 	    }
 
 	    boolean _anyActivity = processScheduleEvent();
+	    if (!_anyActivity && schedule.secondsFromLastScan() > 20) {
+			if (!batteryMonitor.isPowerLow()) {
+				if (checkSchedule()) { setCurrentState(Active); }
+				if (checkRainOut()) { setCurrentState(Active); display.setState(RobotDisplay::RainControl); }
+#ifdef _DEBUG
+				delay(1000);
+#endif
+			}
+	    }
+
 	    anyActivity |= _anyActivity;
 
 	    _anyActivity = checkRainOut();
@@ -297,7 +334,7 @@ boolean RobotController::checkRainOut() {
 	if (rainCoverHandler.isClosed()) {
 		if (rainSensor.getIntensity() > RainIntensity::mist && waterLevelMeter.readLevel() < 100 &&
 			rainSensor.secondsFromRainStarted() > MIN_RAIN_TIME_TO_OPEN_COVER && rainCoverHandler.valveCloseSeconds() > MIN_RAIN_TIME_TO_OPEN_COVER &&
-			schedule.isInActiveDateRange(temperature)) {
+			schedule.isInActiveDateRange()) {
 			result = true;
 			display.setState(RobotDisplay::RainControl);
 			display.update(now);

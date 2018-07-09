@@ -21,35 +21,22 @@ const unsigned long VALVE_TRANSIT_TIMEOUT_MILLIS_MIN = 5000;
 const unsigned long VALVE_TRANSIT_TIMEOUT_MILLIS_MAX = 8000;
 
 const uint8_t MOTORIZED_VALVE_SIGNATURE = 0xA6;
-const int STORAGE_SIZE_WATER_VALVE = sizeof(uint8_t) + sizeof(uint8_t);
+const int STORAGE_SIZE_WATER_VALVE = 2; // sizeof(uint8_t) + sizeof(uint8_t);
 
 class WaterMotorizedValve : public virtual Valve {
 protected:
-	const uint8_t& pwm0Pin;
-	const uint8_t& pwm1Pin;
+	const uint8_t pwm0Pin;
+	const uint8_t pwm1Pin;
 #ifdef BOARD_V2
 	const uint8_t* motorENPins;
 	const uint8_t motorENCount;
-#else
-	const uint8_t& signalPinOpen;
-	const uint8_t& signalPinClosed;
 #endif
 	const int& memAddress;
 
 	Chrono valveTransitChrono;
 	int selectedVolume;
 
-#ifndef BOARD_V2
-	int signalPin;
-	boolean initialSignalPin;
-	boolean signalPinChanged;
-#endif
-
-	boolean processValve(State position
-#ifndef BOARD_V2
-			, int _signalPin
-#endif
-	);
+	boolean processValve(State position);
 
 public:
 	WaterMotorizedValve(const uint8_t _valveMask
@@ -58,12 +45,8 @@ public:
 		, const uint8_t _motorENCount
 #endif
 		, const int _memAddress
-		, const uint8_t _motorOpenPin
-		, const uint8_t _motorClosePin
-#ifndef BOARD_V2
-		, const uint8_t _signalPinOpen = 0
-		, const uint8_t _signalPinClosed = 0
-#endif
+		, const uint8_t _pwm0Pin
+		, const uint8_t _pwm1Pin
 	);
 
 	virtual void setup();
