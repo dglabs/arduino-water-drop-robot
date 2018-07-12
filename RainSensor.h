@@ -9,7 +9,7 @@
 #define RAINSENSOR_H_
 
 #include <Arduino.h>
-#include <RTClib.h>
+#include "RTClib.h"
 
 const uint32_t MIN_RAIN_DURATION = 600l;	// In unixtime seconds
 const uint32_t MIN_RAIN_TIME_TO_OPEN_COVER = 240l;	// In unixtime seconds

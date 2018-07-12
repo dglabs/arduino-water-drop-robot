@@ -6,7 +6,7 @@
  */
 
 #include "WaterDropRobot.h"
-#include <RTClib.h>
+#include "RTClib.h"
 #include "WaterSchedule.h"
 #include "EEPROMUtils.h"
 #include "RobotDisplay.h"
@@ -121,12 +121,12 @@ boolean WaterSchedule::checkEventSecondaryConditions(const ScheduleEvent& event)
 #endif
 
 		// Block already performed event for 12 hours
-		/*if (span.hours() < 12) {
+		if (span.hours() < 12) {
 #ifdef _DEBUG
 			Serial.println(F("Less than 12 hours passed from prior event. Skipping event."));
 #endif
 			result = false;
-		}*/
+		}
 
 		if (event.repeatPeriodDays > 1) {
 			if (span.days() < event.repeatPeriodDays) {
@@ -153,7 +153,7 @@ boolean WaterSchedule::isEventAppropriate(const ScheduleEvent& event) {
 
 #ifdef _DEBUG
 	Serial.print(F("Event type: ")); Serial.print(event.type);
-	Serial.print(F(" Event ID: ")); Serial.println(event.id);
+	Serial.print(F("Event ID: ")); Serial.println(event.id);
 	Serial.print(F("Temperature : ")); Serial.println(weatherManager.maxTemperature);
 #endif
 	now = rtc.now();

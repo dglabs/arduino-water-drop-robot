@@ -8,7 +8,7 @@
 #ifndef WATERFLOWMETER_H_
 #define WATERFLOWMETER_H_
 #include <Chrono.h>
-#include <RTClib.h>
+#include "RTClib.h"
 
 struct PourSummary {
 	uint32_t startTime;

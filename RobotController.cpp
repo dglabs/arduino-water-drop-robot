@@ -113,23 +113,27 @@ boolean RobotController::processScheduleEvent() {
 			}
 		}
 		else if (waterOutValve.isOpen()) {
-			boolean startWaterInAfter = false;
+			//boolean startWaterInAfter = false;
 			if (waterLevelMeter.readLevel() <= schedule.getCurrentEvent().minLevel ||
 					waterOutValve.valveOpenSeconds() > schedule.getCurrentEvent().duration ||
-					waterFlowMeter.getVolumeFromStart() > schedule.getCurrentEvent().liters ||
-					(startWaterInAfter = (waterOutValve.valveOpenSeconds() > 100 && waterFlowMeter.getVolumeFromStart() == 0))) {
+					waterFlowMeter.getVolumeFromStart() >= schedule.getCurrentEvent().liters /*||
+					(startWaterInAfter = (waterOutValve.valveOpenSeconds() > 100 && waterFlowMeter.getVolumeFromStart() == 0))*/) {
 				waterOutValve.closeValve();
 	    		waterFlowMeter.stopWaterOut();
 	    		schedule.dismissCurrentEvent();
 				display.setState(RobotDisplay::Dashboard);
 
 	    		// Start water in if no water poring out
-	    		if (startWaterInAfter && !batteryMonitor.isPowerLow()) {
-	    			schedule.setCurrentEvent(ScheduleEvent(NO_ID, EventType::WaterIn, now, 250 /*duration*/, 300 /*liters*/, 5 /*minTemperature*/
-	    					, 51 /*minLevel*/, 100 /*maxLevel*/, EventFlags::Active));
+	    		/*if (startWaterInAfter && !batteryMonitor.isPowerLow()) {
+	    			schedule.setCurrentEvent(ScheduleEvent(NO_ID, EventType::WaterIn, now
+	    				, 250 // duration
+	    				, 300 // liters
+						, 5 // minTemperature
+	    				, 51 // minLevel
+						, 100 // maxLevel, EventFlags::Active));
 	    			goto LOOP;
 	    		}
-	    		else return false;
+	    		else */ return false;
 			}
 			else return true;	// Continue water pouring
 		}
@@ -252,7 +256,7 @@ LOOP:
 	    	anyActivity = false;
 	    	switch (display.getState()) {
 	    	case RobotDisplay::OutValve: {
-	    		if (waterOutValve.isOpen() /*&& waterOutValve.valveOpenSeconds() > 5*/) {
+	    		if (waterOutValve.isOpen() && waterOutValve.valveOpenSeconds() > 5) {
 	    			waterOutValve.closeValve();
 	    			waterFlowMeter.stopWaterOut();
 	    			schedule.dismissCurrentEvent();

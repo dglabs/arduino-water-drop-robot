@@ -10,7 +10,7 @@
 #include "EEPROMUtils.h"
 
 const int MOTOR_POWER_OFF = 0;
-const int MOTOR_POWER_FULL = 128;
+const int MOTOR_POWER_FULL = 140;
 
 WaterMotorizedValve::WaterMotorizedValve(const uint8_t _valveMask
 #ifdef BOARD_V2

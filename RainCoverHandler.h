@@ -16,8 +16,8 @@
 #include "Valve.h"
 
 const int STORAGE_SIZE_COVER_HANDLER = sizeof(uint8_t) + sizeof(unsigned long);
-const unsigned long TIME_TO_OPEN_COVER_SEC = 75;
-const unsigned long TIME_TO_OPEN_COVER_SEC_MIN = 30;
+const unsigned long TIME_TO_OPEN_COVER_SEC = 90;
+const unsigned long TIME_TO_OPEN_COVER_SEC_MIN = 75;
 const unsigned long MAX_TIME_TO_OPEN_COVER_SEC = 120;
 
 class RainCoverHandler: public virtual Valve {

@@ -27,11 +27,7 @@ RainCoverHandler::RainCoverHandler(const uint8_t _valveMask
 #endif
 		, const uint8_t _tiltSensorPin
 		, int _memAddress) :
-#ifdef BOARD_V2
 	Valve(_valveMask)
-#else
-	Valve(_valveMask)
-#endif
 	, pwm0Pin(_pwm0Pin)
 	, pwm1Pin(_pwm1Pin)
 #ifdef BOARD_V2
@@ -46,7 +42,7 @@ RainCoverHandler::RainCoverHandler(const uint8_t _valveMask
 
 void RainCoverHandler::setup() {
 #ifdef BOARD_V2
-	//portExtender.pinMode(tiltSensorPin, INPUT_PULLUP);
+	portExtender.pinMode(tiltSensorPin, INPUT_PULLUP);
 	pinMode(motorENPin, OUTPUT); digitalWrite(motorENPin, LOW);
 #else
 	pinMode(pwm1Pin, OUTPUT); analogWrite(pwm1Pin, 0);
@@ -71,7 +67,8 @@ void RainCoverHandler::setup() {
 }
 
 boolean RainCoverHandler::isClosed() {
-	switch (state) {
+	return state == State::Closed;
+	/*switch (state) {
 	case State::Closed:
 #ifdef BOARD_V2
 		if (portExtender.digitalRead(tiltSensorPin) != TILT_SENSOR_CLOSED) {
@@ -84,17 +81,18 @@ boolean RainCoverHandler::isClosed() {
 		}
 		else return true;
 	default: return false;
-	}
+	}*/
 }
 
 
 boolean RainCoverHandler::isOpen() {
-	switch (state) {
+	return state == State::Open;
+/*	switch (state) {
 	case State::Open:
 #ifdef BOARD_V2
-		if (portExtender.digitalRead(tiltSensorPin) != TILT_SENSOR_CLOSED) {
+		if (portExtender.digitalRead(tiltSensorPin) != TILT_SENSOR_OPEN) {
 #else
-		if (digitalRead(tiltSensorPin) != TILT_SENSOR_CLOSED) {
+		if (digitalRead(tiltSensorPin) != TILT_SENSOR_OPEN) {
 #endif
 			state = State::Closed;
 			EEPROMUtils::save(memAddress, state);
@@ -102,7 +100,7 @@ boolean RainCoverHandler::isOpen() {
 		}
 		else return true;
 	default: return false;
-	}
+	}*/
 }
 
 void RainCoverHandler::loop() {

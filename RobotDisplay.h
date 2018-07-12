@@ -10,7 +10,7 @@
 
 #include <Arduino.h>
 #include <Chrono.h>
-#include <RTClib.h>
+#include "RTClib.h"
 #include "CommonDefs.h"
 
 const long BACKLIGHT_TIME_SECONDS = 30;

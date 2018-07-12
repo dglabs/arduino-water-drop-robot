@@ -88,21 +88,22 @@ void RobotDisplay::update(DateTime& now) {
 	case OutValve: {
 		if (!innerMenuState) {
 			lcd.setCursor(0, 0);
-			lcd.print(F("IRRIGATE: "));
+			lcd.print(F("IRRIGATE:"));
 			lcd.print(waterOutValve.getStateString());
 
 			if (waterOutValve.isOpen()) {
+				lcd.setCursor(0, 1);
 				lcd.print(waterOutValve.valveOpenSeconds());
 				lcd.print("s");
 
-				lcd.setCursor(0, 1);
-				lcd.print(F("VOL:"));
-				lcd.print(waterFlowMeter.getVolumeFromStart());
-				lcd.print(F("L "));
-				lcd.print(waterFlowMeter.getVolumePerMinute());
-				lcd.print(F("L/m   "));
-
 				if (LCD_ROWS > 2) {
+					lcd.setCursor(0, 2);
+					lcd.print(F("VOL:"));
+					lcd.print(waterFlowMeter.getVolumeFromStart());
+					lcd.print(F("L "));
+					lcd.print(waterFlowMeter.getVolumePerMinute());
+					lcd.print(F("L/m   "));
+
 					lcd.setCursor(0, 3);
 					lcd.print(F("LEVEL:"));
 					lcd.print(waterLevelMeter.readLevel());
@@ -118,7 +119,7 @@ void RobotDisplay::update(DateTime& now) {
 		}
 		else {
 			lcd.setCursor(0, 0);
-			lcd.print(F("POUR VOLUME:     "));
+			lcd.print(F("POUR VOLUME:   "));
 			lcd.setCursor(0, 1);
 			lcd.print(waterOutValve.getSelectedVolume());
 			lcd.print(F("L     "));

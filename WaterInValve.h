@@ -14,7 +14,7 @@
 #include "CommonDefs.h"
 #include "Valve.h"
 
-const long MAX_IN_VALVE_OPEN_TIME_SECONDS = 250;
+const long MAX_IN_VALVE_OPEN_TIME_SECONDS = 400;
 
 class WaterInValve: public virtual Valve {
 protected:

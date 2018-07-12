@@ -79,10 +79,10 @@ public:
 
 	const char* getStateString() {
 		switch (getState()) {
-		case State::Open: return "OPEN";
+		case State::Open:    return "OPEN   ";
 		case State::Opening: return "OPENING";
 		case State::Closing: return "CLOSING";
-		case State::Closed: return "CLOSED";
+		case State::Closed:  return "CLOSED ";
 		default: return "UNDEFINED";
 		}
 	}

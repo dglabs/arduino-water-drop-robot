@@ -25,7 +25,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/EEPROM}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/EEPROM/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/LiquidCrystal_I2C}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/RTClib}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Wire}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Wire/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Low-Power}&quot;"/>
@@ -45,7 +44,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/EEPROM}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/EEPROM/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/LiquidCrystal_I2C}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/RTClib}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Wire}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Wire/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Low-Power}&quot;"/>
@@ -65,7 +63,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/EEPROM}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/EEPROM/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/LiquidCrystal_I2C}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/RTClib}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Wire}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Wire/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/WaterDropRobot/libraries/Low-Power}&quot;"/>

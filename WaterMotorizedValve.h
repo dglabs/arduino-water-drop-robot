@@ -14,7 +14,7 @@
 #include "CommonDefs.h"
 #include "Valve.h"
 
-const long MAX_OUT_VALVE_OPEN_TIME_SECONDS = 600;
+const long MAX_OUT_VALVE_OPEN_TIME_SECONDS = 1200;
 
 const unsigned long VALVE_TRANSIT_SLOW_MILLIS = 500;
 const unsigned long VALVE_TRANSIT_TIMEOUT_MILLIS_MIN = 5000;
